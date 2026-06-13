@@ -1,0 +1,147 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Department {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  color       String?
+  icon        String?
+  
+  members       Member[]
+  activities    Activity[]
+  roomBookings  RoomBooking[]
+}
+
+model Member {
+  id            String   @id @default(cuid())
+  prefix        String?  // คำนำหน้าชื่อ
+  firstNameTh   String?  // ชื่อจริง
+  lastNameTh    String?  // นามสกุล
+  firstNameEn   String?  // Firstname
+  lastNameEn    String?  // Surname
+  nickname      String?  // ชื่อเล่น / Nickname
+  studentId     String?  @unique // รหัสนิสิต
+  password      String?  // รหัสผ่าน (สำหรับ Login)
+  phone         String?  // เบอร์โทรศัพท์
+  year          Int?     // ชั้นปี
+  major         String?  // หลักสูตร (สาขา)
+  group         String?  // กรุ๊ป
+  nationalId    String?  // เลขประจำตัวประชาชน
+  bloodGroup    String?  // กรุ๊ปเลือด
+  allergies     String?  // สิ่งที่แพ้
+  medicalCondition String? // โรคประจำตัว
+  religion      String?  // ศาสนา
+  birthday      DateTime? // วันเกิด
+  address       String?  // ที่อยู่ปัจจุบัน
+  email         String?  // อีเมล
+  lineId        String?  // Line ID
+  instagram     String?  // Instagram
+  shirtSize     String?  // รอบอกเสื้อ
+  mbti          String?  // MBTI
+  eColor        String?  // E-Color
+  
+  role          String   @default("member")
+  positionTitle String?  // ตำแหน่ง
+  avatarUrl     String?
+
+  departmentId  String?
+  department    Department? @relation(fields: [departmentId], references: [id])
+
+  activitiesCreated Activity[]
+  documentsUploaded ActivityDocument[]
+  budgetReviews     BudgetReview[]
+  announcements     Announcement[]
+  roomBookings      RoomBooking[]
+}
+
+model Activity {
+  id              String   @id @default(cuid())
+  title           String
+  description     String?
+  startDate       DateTime?
+  endDate         DateTime?
+  budgetRequested Float    @default(0)
+  budgetApproved  Float?
+  status          String   @default("draft")
+  planFileUrl     String?
+  createdAt       DateTime @default(now())
+
+  departmentId    String?
+  department      Department? @relation(fields: [departmentId], references: [id])
+
+  createdById     String
+  createdBy       Member      @relation(fields: [createdById], references: [id])
+
+  documents       ActivityDocument[]
+  budgetReviews   BudgetReview[]
+}
+
+model ActivityDocument {
+  id          String   @id @default(cuid())
+  fileName    String
+  fileUrl     String
+  fileType    String?
+  uploadedAt  DateTime @default(now())
+
+  activityId  String
+  activity    Activity @relation(fields: [activityId], references: [id])
+
+  uploadedById String
+  uploadedBy   Member   @relation(fields: [uploadedById], references: [id])
+}
+
+model BudgetReview {
+  id          String   @id @default(cuid())
+  status      String
+  feedback    String?
+  reviewedAt  DateTime @default(now())
+
+  activityId  String
+  activity    Activity @relation(fields: [activityId], references: [id])
+
+  reviewerId  String
+  reviewer    Member   @relation(fields: [reviewerId], references: [id])
+}
+
+model Announcement {
+  id          String   @id @default(cuid())
+  title       String
+  content     String
+  pinned      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  customDate  DateTime? // วันที่ผู้ใช้ตั้งเอง (ถ้ามี)
+
+  authorId    String
+  author      Member   @relation(fields: [authorId], references: [id])
+}
+
+model RoomBooking {
+  id          String   @id @default(cuid())
+  roomName    String
+  date        String
+  startTime   String
+  endTime     String
+  purpose     String
+  status      String   @default("pending")
+
+  // ── ชื่อผู้จอง + ฝ่าย (พิมพ์เอง) ──
+  // String? หมายถึง "เป็น String แต่ไม่บังคับกรอก (nullable)"
+  bookerName  String?
+  bookerDept  String?
+
+  // ── ความสัมพันธ์กับตาราง Member (optional) ──
+  // "?" ต่อท้าย = ไม่บังคับ (ผู้จองไม่จำเป็นต้องเป็นสมาชิกในระบบ)
+  bookedById  String?
+  bookedBy    Member?  @relation(fields: [bookedById], references: [id])
+
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id])
+}
