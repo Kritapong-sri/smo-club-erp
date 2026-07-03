@@ -32,7 +32,9 @@ export async function POST(request) {
     }
 
     // ตรวจสอบว่าพบสมาชิกและรหัสผ่านตรงกันหรือไม่
-    if (member.password !== password) {
+    // ถ้า password ใน DB เป็น null = ยังไม่ได้ตั้ง → ใช้รหัสนิสิตเป็นรหัสผ่านเริ่มต้น
+    const expectedPassword = member.password || member.studentId;
+    if (expectedPassword !== password) {
       console.log(`[LOGIN FAILED] Invalid password for studentId: ${studentId}. Expected: ${member.password}`);
       return NextResponse.json(
         { error: 'รหัสนิสิตหรือรหัสผ่านไม่ถูกต้อง' },
@@ -47,7 +49,7 @@ export async function POST(request) {
   } catch (error) {
     console.error('Login error:', error);
     return NextResponse.json(
-      { error: 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ' },
+      { error: `เกิดข้อผิดพลาดในการเข้าสู่ระบบ: ${error.message}` },
       { status: 500 }
     );
   }

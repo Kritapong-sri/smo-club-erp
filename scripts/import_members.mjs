@@ -139,6 +139,7 @@ async function main() {
           shirtSize: getVal('รอบอกเสื้อ'),
           mbti: getVal('MBTI'),
           eColor: getVal('E-Color'),
+          password: studentId, // รหัสผ่านเริ่มต้น = รหัสนิสิต
           role: 'member',
         }
       });
