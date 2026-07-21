@@ -1,7 +1,10 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import StatusBadge from '@/components/StatusBadge';
+import BudgetDashboard from '@/components/BudgetDashboard';
+import BudgetTable from '@/components/BudgetTable';
+import BudgetImportModal from '@/components/BudgetImportModal';
 
 export default function ActivityDetailClient({ initialActivity, session }) {
   const [activity, setActivity] = useState(initialActivity);
@@ -10,6 +13,10 @@ export default function ActivityDetailClient({ initialActivity, session }) {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [activeTab, setActiveTab] = useState('details');
+  const [budgetData, setBudgetData] = useState({ budgetItems: [], summary: {} });
+  const [loadingBudget, setLoadingBudget] = useState(true);
   
   // Form States
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -63,6 +70,66 @@ export default function ActivityDetailClient({ initialActivity, session }) {
   );
 
   // --- Handlers ---
+  const fetchBudget = async () => {
+    setLoadingBudget(true);
+    try {
+      const res = await fetch(`/api/activities/${activity.id}/budget`);
+      if (!res.ok) throw new Error('Failed to fetch budget');
+      const data = await res.json();
+      setBudgetData(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingBudget(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchBudget();
+  }, [activity.id]);
+
+  const handleAddItem = async (itemData) => {
+    try {
+      const res = await fetch(`/api/activities/${activity.id}/budget`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(itemData),
+      });
+      if (!res.ok) throw new Error('Failed to add budget item');
+      await fetchBudget();
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const handleUpdateItem = async (itemData) => {
+    try {
+      const res = await fetch(`/api/activities/${activity.id}/budget`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(itemData),
+      });
+      if (!res.ok) throw new Error('Failed to update budget item');
+      await fetchBudget();
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const handleDeleteItem = async (itemId) => {
+    try {
+      const res = await fetch(`/api/activities/${activity.id}/budget`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: itemId }),
+      });
+      if (!res.ok) throw new Error('Failed to delete budget item');
+      await fetchBudget();
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
   const handleEditSave = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -196,7 +263,38 @@ export default function ActivityDetailClient({ initialActivity, session }) {
         </div>
       </div>
 
-      <div className="grid-3 stagger-children">
+      {/* Tab Navigation */}
+      <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid var(--border-primary)', marginBottom: '24px' }}>
+        <button 
+          className="btn btn-sm"
+          onClick={() => setActiveTab('details')}
+          style={{ 
+            borderRadius: 'var(--radius-sm) var(--radius-sm) 0 0', 
+            background: activeTab === 'details' ? 'var(--blue-500)' : 'transparent', 
+            color: activeTab === 'details' ? 'white' : 'var(--text-secondary)',
+            border: activeTab === 'details' ? '1px solid var(--blue-500)' : '1px solid transparent',
+            fontWeight: '600'
+          }}
+        >
+          📄 รายละเอียด & เอกสารแนบ
+        </button>
+        <button 
+          className="btn btn-sm"
+          onClick={() => setActiveTab('budget')}
+          style={{ 
+            borderRadius: 'var(--radius-sm) var(--radius-sm) 0 0', 
+            background: activeTab === 'budget' ? 'var(--blue-500)' : 'transparent', 
+            color: activeTab === 'budget' ? 'white' : 'var(--text-secondary)',
+            border: activeTab === 'budget' ? '1px solid var(--blue-500)' : '1px solid transparent',
+            fontWeight: '600'
+          }}
+        >
+          💰 งบประมาณ & รายจ่ายจริง (Budget)
+        </button>
+      </div>
+
+      {activeTab === 'details' ? (
+        <div className="grid-3 stagger-children">
         <div className="col-span-2 flex-col gap-lg">
           {/* Details Card */}
           <div className="card">
@@ -363,6 +461,57 @@ export default function ActivityDetailClient({ initialActivity, session }) {
           </div>
         </div>
       </div>
+    ) : (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }} className="animate-fade-in">
+          {/* Header row inside tab */}
+          <div className="card" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-primary)', padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <h2 style={{ fontSize: '18px', fontWeight: '700', color: 'var(--text-primary)', margin: 0 }}>ระบบงบประมาณและการเงิน</h2>
+              <p style={{ fontSize: '13px', color: 'var(--text-tertiary)', margin: '4px 0 0 0' }}>จัดการงบประมาณ นำเข้าไฟล์ และติดตามการเบิกจ่าย</p>
+            </div>
+            {canEdit && (
+              <button 
+                className="btn btn-primary" 
+                onClick={() => setShowImportModal(true)}
+              >
+                📤 นำเข้าข้อมูล CSV (Google Sheets)
+              </button>
+            )}
+          </div>
+
+          {loadingBudget ? (
+            <div className="card" style={{ minHeight: '300px', display: 'flex', justifyContent: 'center', alignItems: 'center', background: 'var(--bg-glass)' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+                <span style={{ fontSize: '32px', animation: 'spin 2s linear infinite' }}>⏳</span>
+                <p style={{ color: 'var(--text-secondary)' }}>กำลังโหลดข้อมูลการเงิน...</p>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Dashboard */}
+              <BudgetDashboard summary={budgetData.summary} />
+
+              {/* Planned Table */}
+              <BudgetTable 
+                items={budgetData.budgetItems.filter(item => item.type === 'planned')} 
+                type="planned" 
+                onAddItem={handleAddItem} 
+                onUpdateItem={handleUpdateItem} 
+                onDeleteItem={handleDeleteItem} 
+              />
+
+              {/* Actual Table */}
+              <BudgetTable 
+                items={budgetData.budgetItems.filter(item => item.type === 'actual')} 
+                type="actual" 
+                onAddItem={handleAddItem} 
+                onUpdateItem={handleUpdateItem} 
+                onDeleteItem={handleDeleteItem} 
+              />
+            </>
+          )}
+        </div>
+      )}
 
       {/* --- MODALS --- */}
       
@@ -474,6 +623,12 @@ export default function ActivityDetailClient({ initialActivity, session }) {
         </div>
       )}
 
+      <BudgetImportModal 
+        isOpen={showImportModal} 
+        onClose={() => setShowImportModal(false)} 
+        activityId={activity.id} 
+        onImportSuccess={fetchBudget} 
+      />
     </div>
   );
 }

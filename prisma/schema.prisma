@@ -83,6 +83,7 @@ model Activity {
 
   documents       ActivityDocument[]
   budgetReviews   BudgetReview[]
+  budgetItems     BudgetItem[]
 }
 
 model ActivityDocument {
@@ -145,4 +146,24 @@ model RoomBooking {
 
   departmentId String?
   department   Department? @relation(fields: [departmentId], references: [id])
+}
+
+model BudgetItem {
+  id           String   @id @default(cuid())
+  activityId   String
+  activity     Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  
+  type         String   // "planned" (Money Plan / MP) หรือ "actual" (Tracking / Expense)
+  name         String   // รายการ
+  quantity     Float    @default(1) // จำนวน
+  unit         String   @default("ชิ้น") // หน่วย
+  pricePerUnit Float    @default(0) // ราคาต่อหน่วย
+  total        Float    @default(0) // ยอดรวม
+  category     String   // หมวดหลัก (ค่าตอบแทน, ค่าใช้สอย, ค่าวัสดุ)
+  subCategory  String?  // หมวดย่อย
+  isReceived   Boolean  @default(false) // ได้รับสินค้าแล้ว (สำหรับ planned)
+  note         String?  // หมายเหตุ
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
