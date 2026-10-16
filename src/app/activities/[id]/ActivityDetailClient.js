@@ -63,8 +63,12 @@ export default function ActivityDetailClient({ initialActivity, session }) {
   const [reviewData, setReviewData] = useState({
     status: 'approved',
     feedback: '',
-    fileUrl: ''
+    fileUrl: '',
+    fileName: ''
   });
+  const [reviewUploadMode, setReviewUploadMode] = useState('file'); // 'file' or 'link'
+  const [isUploadingReviewGDrive, setIsUploadingReviewGDrive] = useState(false);
+  const [reviewUploadMessage, setReviewUploadMessage] = useState(null);
 
   const canEdit = session && (
     ['admin', 'board', 'head'].includes(session.role) ||
@@ -355,12 +359,50 @@ export default function ActivityDetailClient({ initialActivity, session }) {
     }
   };
 
+  const handleReviewFileSelectAndUploadGDrive = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingReviewGDrive(true);
+    setReviewUploadMessage({ type: 'info', text: 'กำลังอัปโหลดไฟล์ขึ้น Google Drive...' });
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await fetch('/api/upload/gdrive', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'อัปโหลดไฟล์ไม่สำเร็จ');
+
+      setReviewData(prev => ({
+        ...prev,
+        fileUrl: data.url,
+        fileName: file.name
+      }));
+
+      setReviewUploadMessage({
+        type: 'success',
+        text: `อัปโหลดไฟล์ "${file.name}" ขึ้น Google Drive เรียบร้อยแล้ว!`
+      });
+    } catch (err) {
+      console.error(err);
+      setReviewUploadMessage({ type: 'error', text: err.message });
+    } finally {
+      setIsUploadingReviewGDrive(false);
+    }
+  };
+
   const handleReviewSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
+      const fileLabel = reviewData.fileName ? `ไฟล์แนบ (${reviewData.fileName})` : 'ไฟล์แนบ';
       const finalFeedback = reviewData.fileUrl 
-        ? `${reviewData.feedback}\n\nไฟล์แนบ: ${reviewData.fileUrl}`
+        ? `${reviewData.feedback}\n\n📎 ${fileLabel}: ${reviewData.fileUrl}`
         : reviewData.feedback;
 
       const res = await fetch(`/api/activities/${activity.id}/review`, {
@@ -379,7 +421,8 @@ export default function ActivityDetailClient({ initialActivity, session }) {
         budgetReviews: [review, ...(prev.budgetReviews || [])]
       }));
       setShowReviewModal(false);
-      setReviewData({ status: 'approved', feedback: '', fileUrl: '' });
+      setReviewData({ status: 'approved', feedback: '', fileUrl: '', fileName: '' });
+      setReviewUploadMessage(null);
     } catch (err) {
       alert('Error submitting review: ' + err.message);
     } finally {
@@ -436,14 +479,14 @@ export default function ActivityDetailClient({ initialActivity, session }) {
 
           {/* 3. เหรัญญิกตรวจ: ตรวจได้ตอนรอตรวจ หรือตอนอยู่ในสถานะแก้ไข */}
           {isTreasurerUser && ['pending_treasurer', 'pending_executive', 'revision'].includes(activity.status) && (
-            <button className="btn btn-primary flex items-center gap-xs" onClick={() => { setReviewData({ status: 'approved', feedback: '', fileUrl: '' }); setShowReviewModal(true); }}>
+            <button className="btn btn-primary flex items-center gap-xs" onClick={() => { setReviewData({ status: 'approved', feedback: '', fileUrl: '', fileName: '' }); setReviewUploadMessage(null); setShowReviewModal(true); }}>
               <ClipboardCheck size={15} /> ตรวจงบประมาณ (เหรัญญิก)
             </button>
           )}
 
           {/* 4. ฝ่ายบริหาร/สามเหลี่ยมตรวจ: ตรวจได้พร้อมกัน */}
           {isExecutiveUser && ['pending_treasurer', 'pending_executive', 'revision'].includes(activity.status) && (
-            <button className="btn btn-secondary flex items-center gap-xs hover-scale" onClick={() => { setReviewData({ status: 'approved', feedback: '', fileUrl: '' }); setShowReviewModal(true); }} style={{ borderColor: 'var(--blue-600)', color: 'var(--blue-600)', fontWeight: '600' }}>
+            <button className="btn btn-secondary flex items-center gap-xs hover-scale" onClick={() => { setReviewData({ status: 'approved', feedback: '', fileUrl: '', fileName: '' }); setReviewUploadMessage(null); setShowReviewModal(true); }} style={{ borderColor: 'var(--blue-600)', color: 'var(--blue-600)', fontWeight: '600' }}>
               <CheckSquare size={15} /> พิจารณาอนุมัติ (สามเหลี่ยม)
             </button>
           )}
@@ -926,7 +969,7 @@ export default function ActivityDetailClient({ initialActivity, session }) {
 
       {showReviewModal && (
         <div className="modal-overlay">
-          <div className="modal-content card animate-fade-in" style={{ width: '90%', maxWidth: '500px', margin: 'auto' }}>
+          <div className="modal-content card animate-fade-in" style={{ width: '90%', maxWidth: '520px', margin: 'auto' }}>
             <div className="flex justify-between items-center mb-md">
               <h3>พิจารณาอนุมัติกิจกรรม / งบประมาณ</h3>
               <button onClick={() => setShowReviewModal(false)} className="btn btn-ghost btn-sm px-xs"><X size={18} /></button>
@@ -943,21 +986,99 @@ export default function ActivityDetailClient({ initialActivity, session }) {
                 <label className="input-label">คำแนะนำ / ความคิดเห็นเพิ่มเติม <span style={{ color: 'var(--color-danger)' }}>*</span></label>
                 <textarea className="input" rows="3" placeholder="ระบุเหตุผล ข้อเสนอแนะ หรือจุดที่ต้องการให้แก้ไข..." value={reviewData.feedback} onChange={e => setReviewData({ ...reviewData, feedback: e.target.value })} required />
               </div>
+
+              {/* แนบไฟล์/เอกสารประกอบการตรวจแบบ Dropzone + Link */}
               <div className="input-group mb-md">
-                <label className="input-label">แนบลิงก์เอกสาร / Google Drive ประกอบการตรวจ (ตัวเลือก)</label>
-                <input
-                  type="url"
-                  className="input font-en"
-                  placeholder="https://drive.google.com/..."
-                  value={reviewData.fileUrl || ''}
-                  onChange={e => setReviewData({ ...reviewData, fileUrl: e.target.value })}
-                />
-                <span className="text-xs text-tertiary mt-xs">หากมีไฟล์ร่างที่คอมเมนต์หรือตัวอย่าง สามารถวางลิงก์ให้ผู้จัดเปิดดูได้ทันที</span>
+                <div className="flex justify-between items-center mb-xs">
+                  <label className="input-label mb-0">แนบเอกสาร / ไฟล์ประกอบการตรวจ (ตัวเลือก)</label>
+                  <div style={{ display: 'flex', gap: '4px' }}>
+                    <button
+                      type="button"
+                      className={`btn btn-xs ${reviewUploadMode === 'file' ? 'btn-primary' : 'btn-outline'}`}
+                      onClick={() => setReviewUploadMode('file')}
+                      style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '4px' }}
+                    >
+                      <Folder size={12} /> อัปโหลดไฟล์
+                    </button>
+                    <button
+                      type="button"
+                      className={`btn btn-xs ${reviewUploadMode === 'link' ? 'btn-primary' : 'btn-outline'}`}
+                      onClick={() => setReviewUploadMode('link')}
+                      style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '4px' }}
+                    >
+                      <LinkIcon size={12} /> แปะลิงก์
+                    </button>
+                  </div>
+                </div>
+
+                {reviewUploadMode === 'file' ? (
+                  <div>
+                    <div style={{
+                      border: '2px dashed var(--blue-300)',
+                      borderRadius: 'var(--radius-md)',
+                      padding: '16px 12px',
+                      textAlign: 'center',
+                      cursor: 'pointer',
+                      background: 'var(--blue-50)',
+                      position: 'relative'
+                    }}>
+                      <input
+                        type="file"
+                        accept=".pdf,.xlsx,.csv,.doc,.docx,.png,.jpg,.jpeg"
+                        onChange={handleReviewFileSelectAndUploadGDrive}
+                        disabled={isUploadingReviewGDrive}
+                        style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer' }}
+                      />
+                      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '6px' }}>
+                        {isUploadingReviewGDrive ? (
+                          <Loader2 size={26} className="animate-spin" style={{ color: 'var(--blue-600)' }} />
+                        ) : (
+                          <UploadCloud size={26} style={{ color: 'var(--blue-600)' }} />
+                        )}
+                      </div>
+                      <p style={{ fontWeight: '600', fontSize: '13px', marginBottom: '2px', color: 'var(--blue-700)' }}>
+                        {isUploadingReviewGDrive ? 'กำลังอัปโหลดไฟล์ขึ้น Google Drive...' : (reviewData.fileName ? `ไฟล์ที่เลือก: ${reviewData.fileName}` : 'คลิกหรือลากไฟล์เอกสารมาวางที่นี่')}
+                      </p>
+                      <p style={{ fontSize: '11px', color: 'var(--text-tertiary)', margin: 0 }}>
+                        {reviewData.fileUrl ? '✅ บันทึกขึ้น Google Drive เรียบร้อยแล้ว' : 'ระบบจะอัปโหลดเข้า Google Drive สโมสรให้อัตโนมัติ'}
+                      </p>
+                    </div>
+
+                    {reviewUploadMessage && (
+                      <div style={{
+                        marginTop: '8px',
+                        padding: '6px 10px',
+                        borderRadius: '6px',
+                        fontSize: '12px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        background: reviewUploadMessage.type === 'error' ? '#fee2e2' : '#ecfdf5',
+                        color: reviewUploadMessage.type === 'error' ? '#b91c1c' : '#047857'
+                      }}>
+                        {reviewUploadMessage.type === 'error' ? <AlertCircle size={14} /> : <CheckCircle2 size={14} />}
+                        <span>{reviewUploadMessage.text}</span>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div>
+                    <input
+                      type="url"
+                      className="input font-en"
+                      placeholder="https://drive.google.com/..."
+                      value={reviewData.fileUrl || ''}
+                      onChange={e => setReviewData({ ...reviewData, fileUrl: e.target.value })}
+                    />
+                    <span className="text-xs text-tertiary mt-xs">หากมีลิงก์ Google Drive หรือเอกสาร สามารถวางที่นี่ได้ทันที</span>
+                  </div>
+                )}
               </div>
+
               <div className="flex justify-end gap-sm">
                 <button type="button" className="btn btn-secondary" onClick={() => setShowReviewModal(false)}>ยกเลิก</button>
-                <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
-                  {reviewData.status === 'approved' ? 'อนุมัติโครงการ' : 'ส่งกลับให้แก้ไข'}
+                <button type="submit" className="btn btn-primary" disabled={isSubmitting || isUploadingReviewGDrive}>
+                  {isSubmitting ? 'กำลังบันทึก...' : (reviewData.status === 'approved' ? 'อนุมัติโครงการ' : 'ส่งกลับให้แก้ไข')}
                 </button>
               </div>
             </form>
