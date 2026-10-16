@@ -297,6 +297,24 @@ export default function ActivityDetailClient({ initialActivity, session }) {
     }
   };
 
+  const isAdmin = session?.role === 'admin';
+
+  const handleDeleteActivity = async () => {
+    if (!confirm(`ลบโครงการ "${activity.title}" ใช่หรือไม่?\nเอกสาร งบประมาณ และประวัติการตรวจทั้งหมดของโครงการนี้จะถูกลบด้วย และกู้คืนไม่ได้`)) return;
+    setIsSubmitting(true);
+    try {
+      const res = await fetch(`/api/activities/${activity.id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'ลบโครงการไม่สำเร็จ');
+      }
+      window.location.href = '/activities';
+    } catch (err) {
+      alert(err.message);
+      setIsSubmitting(false);
+    }
+  };
+
   const handleSubmitForReview = async () => {
     if (!confirm('ยืนยันส่งร่างงบประมาณให้เหรัญญิกตรวจสอบใช่หรือไม่?')) return;
     setIsSubmitting(true);
@@ -388,6 +406,11 @@ export default function ActivityDetailClient({ initialActivity, session }) {
           {isExecutiveUser && activity.status === 'pending_executive' && (
             <button className="btn btn-primary flex items-center gap-xs" onClick={() => setShowReviewModal(true)}>
               <CheckSquare size={15} /> พิจารณาอนุมัติ
+            </button>
+          )}
+          {isAdmin && (
+            <button className="btn btn-danger flex items-center gap-xs" onClick={handleDeleteActivity} disabled={isSubmitting}>
+              <Trash2 size={15} /> ลบโครงการ
             </button>
           )}
         </div>

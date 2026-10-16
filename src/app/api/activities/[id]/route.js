@@ -46,3 +46,29 @@ export async function PATCH(request, { params }) {
     return NextResponse.json({ error: 'Failed to update activity' }, { status: 500 });
   }
 }
+
+// ลบโครงการ — เฉพาะ admin เท่านั้น
+export async function DELETE(request, { params }) {
+  try {
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (session.role !== 'admin') {
+      return NextResponse.json({ error: 'Forbidden: เฉพาะ admin เท่านั้นที่ลบโครงการได้' }, { status: 403 });
+    }
+
+    const { id } = await params;
+
+    // ActivityDocument / BudgetReview ไม่มี onDelete: Cascade จึงต้องลบเองก่อน
+    await prisma.$transaction([
+      prisma.activityDocument.deleteMany({ where: { activityId: id } }),
+      prisma.budgetReview.deleteMany({ where: { activityId: id } }),
+      prisma.budgetItem.deleteMany({ where: { activityId: id } }),
+      prisma.activity.delete({ where: { id } }),
+    ]);
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Failed to delete activity:', error);
+    return NextResponse.json({ error: 'ลบโครงการไม่สำเร็จ' }, { status: 500 });
+  }
+}

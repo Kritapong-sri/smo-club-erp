@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Plus, Pin, X } from 'lucide-react';
+import { Plus, Pin, X, Trash2 } from 'lucide-react';
 
 export default function AnnouncementBoard({ initialAnnouncements, session }) {
   const [announcements, setAnnouncements] = useState(initialAnnouncements);
@@ -17,6 +17,22 @@ export default function AnnouncementBoard({ initialAnnouncements, session }) {
       session.positionTitle.includes('อุปนายก')
     ))
   );
+
+  const isAdmin = session?.role === 'admin';
+
+  const handleDelete = async (ann) => {
+    if (!confirm(`ลบประกาศ "${ann.title}" ใช่หรือไม่?`)) return;
+    try {
+      const res = await fetch(`/api/announcements?id=${ann.id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'ลบประกาศไม่สำเร็จ');
+      }
+      setAnnouncements(prev => prev.filter(a => a.id !== ann.id));
+    } catch (error) {
+      alert(error.message);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -82,7 +98,17 @@ export default function AnnouncementBoard({ initialAnnouncements, session }) {
               <div key={ann.id} className={`announcement-card ${ann.pinned ? 'pinned' : ''}`}>
                 <div className="announcement-title" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                   {ann.pinned && <Pin size={14} style={{ color: 'var(--blue-600)', flexShrink: 0 }} />}
-                  <span>{ann.title}</span>
+                  <span style={{ flex: 1 }}>{ann.title}</span>
+                  {isAdmin && (
+                    <button
+                      onClick={() => handleDelete(ann)}
+                      title="ลบประกาศ"
+                      aria-label="ลบประกาศ"
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-tertiary)', padding: '2px', display: 'flex' }}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
                 </div>
                 <div className="announcement-body" style={{ whiteSpace: 'pre-wrap' }}>{ann.content}</div>
                 <div className="announcement-date flex justify-between">

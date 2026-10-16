@@ -31,16 +31,13 @@ export async function POST(request) {
     }
 
     // ตรวจสอบรหัสผ่าน:
-    // 1. ถ้า password ใน DB เป็น null → รหัสผ่านเริ่มต้นคือ studentId
-    // 2. ถ้าตรงกับ password หรือ studentId ในฐานข้อมูลแบบตรงๆ → อนุญาต
-    // 3. ถ้าเป็น hash ใน DB → ใช้ verifyPassword
+    // 1. ถ้า password ใน DB เป็น null (ยังไม่เคยตั้ง) → รหัสผ่านเริ่มต้นคือ studentId
+    // 2. ถ้าตั้งรหัสแล้ว → ต้องตรงกับรหัสที่ตั้งไว้เท่านั้น (รองรับทั้ง hash และ plaintext เก่า)
     let isValidPassword = false;
     if (!member.password) {
       isValidPassword = (password === member.studentId);
-    } else if (member.password === password || member.studentId === password) {
-      isValidPassword = true;
     } else {
-      isValidPassword = await verifyPassword(password, member.password, member.studentId);
+      isValidPassword = await verifyPassword(password, member.password);
     }
 
     if (!isValidPassword) {

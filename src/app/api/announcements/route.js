@@ -59,3 +59,23 @@ export async function POST(request) {
     return NextResponse.json({ error: 'เกิดข้อผิดพลาดในการสร้างประกาศ' }, { status: 500 });
   }
 }
+
+// ลบประกาศ — เฉพาะ admin เท่านั้น: DELETE /api/announcements?id=xxx
+export async function DELETE(request) {
+  try {
+    const session = await getSession();
+    if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (session.role !== 'admin') {
+      return NextResponse.json({ error: 'Forbidden: เฉพาะ admin เท่านั้นที่ลบประกาศได้' }, { status: 403 });
+    }
+
+    const id = new URL(request.url).searchParams.get('id');
+    if (!id) return NextResponse.json({ error: 'ไม่ได้ระบุประกาศที่จะลบ' }, { status: 400 });
+
+    await prisma.announcement.delete({ where: { id } });
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Failed to delete announcement:', error);
+    return NextResponse.json({ error: 'ลบประกาศไม่สำเร็จ' }, { status: 500 });
+  }
+}
