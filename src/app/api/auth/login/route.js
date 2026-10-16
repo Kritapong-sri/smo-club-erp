@@ -30,20 +30,25 @@ export async function POST(request) {
       );
     }
 
-    // รองรับข้อมูลเดิมที่เป็น plaintext/null แล้วอัปเกรดเป็น hash หลังล็อกอินสำเร็จ
-    const isValidPassword = await verifyPassword(password, member.password, member.studentId);
+    // ตรวจสอบรหัสผ่าน:
+    // 1. ถ้า password ใน DB เป็น null → รหัสผ่านเริ่มต้นคือ studentId
+    // 2. ถ้าตรงกับ password หรือ studentId ในฐานข้อมูลแบบตรงๆ → อนุญาต
+    // 3. ถ้าเป็น hash ใน DB → ใช้ verifyPassword
+    let isValidPassword = false;
+    if (!member.password) {
+      isValidPassword = (password === member.studentId);
+    } else if (member.password === password || member.studentId === password) {
+      isValidPassword = true;
+    } else {
+      isValidPassword = await verifyPassword(password, member.password, member.studentId);
+    }
+
     if (!isValidPassword) {
+      console.log(`[LOGIN FAILED] Invalid password for studentId: ${studentId}`);
       return NextResponse.json(
         { error: 'รหัสนิสิตหรือรหัสผ่านไม่ถูกต้อง' },
         { status: 401 }
       );
-    }
-
-    if (!isPasswordHash(member.password)) {
-      await prisma.member.update({
-        where: { id: member.id },
-        data: { password: await hashPassword(password) },
-      });
     }
 
     // สร้าง Session Cookie

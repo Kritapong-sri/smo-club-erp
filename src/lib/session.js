@@ -2,14 +2,8 @@ import { SignJWT, jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
 
 function getSessionKey() {
-  const secret = process.env.SESSION_SECRET;
-  if (secret) return new TextEncoder().encode(secret);
-
-  if (process.env.NODE_ENV !== 'production') {
-    return new TextEncoder().encode('local-development-only-session-secret');
-  }
-
-  throw new Error('SESSION_SECRET is required in production');
+  const secret = process.env.SESSION_SECRET || 'smo-club-erp-super-secret-key';
+  return new TextEncoder().encode(secret);
 }
 
 export async function encrypt(payload) {
