@@ -17,7 +17,13 @@ export async function POST(request) {
     const fileName = file.name || 'document.pdf';
     const mimeType = file.type || 'application/pdf';
 
-    const hasGDriveConfig = process.env.GOOGLE_CLIENT_EMAIL && process.env.GOOGLE_PRIVATE_KEY;
+    const hasGDriveConfig =
+      (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET && process.env.GOOGLE_REFRESH_TOKEN) ||
+      (process.env.GOOGLE_CLIENT_EMAIL && process.env.GOOGLE_PRIVATE_KEY);
+
+    // บน Vercel ระบบไฟล์เป็น read-only จึงบันทึกไฟล์ลงเครื่องไม่ได้ ต้องใช้ Google Drive เท่านั้น
+    const isServerless = !!process.env.VERCEL;
+    let gdriveError = null;
 
     if (hasGDriveConfig) {
       try {
@@ -31,11 +37,23 @@ export async function POST(request) {
         });
       } catch (gdriveErr) {
         console.error('Google Drive Upload Error:', gdriveErr);
-        // Fallback to Local Upload if GDrive upload fails
+        gdriveError = gdriveErr;
       }
     }
 
-    // Fallback: Local Upload Proxy
+    if (isServerless) {
+      const reason = !hasGDriveConfig
+        ? 'ยังไม่ได้ตั้งค่า Google Drive บน Vercel'
+        : gdriveError?.message === 'invalid_grant'
+          ? 'Google Drive token หมดอายุ (invalid_grant) — ต้องสร้าง GOOGLE_REFRESH_TOKEN ใหม่'
+          : `Google Drive: ${gdriveError?.message}`;
+      return NextResponse.json(
+        { error: `อัปโหลดไม่สำเร็จ: ${reason} — ระหว่างนี้ใช้โหมด "วางลิงก์" แทนได้` },
+        { status: 502 }
+      );
+    }
+
+    // Fallback (เฉพาะตอนรันในเครื่อง): บันทึกไฟล์ไว้ที่ public/uploads
     const uploadDir = path.join(process.cwd(), 'public', 'uploads');
     await mkdir(uploadDir, { recursive: true });
 
