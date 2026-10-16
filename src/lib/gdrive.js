@@ -1,12 +1,21 @@
 import { google } from 'googleapis';
 import { Readable } from 'stream';
 
+function cleanEnv(val) {
+  if (!val) return '';
+  let str = String(val).trim();
+  if ((str.startsWith('"') && str.endsWith('"')) || (str.startsWith("'") && str.endsWith("'"))) {
+    str = str.slice(1, -1).trim();
+  }
+  return str;
+}
+
 async function getGDriveAuth() {
-  const clientEmail = process.env.GOOGLE_CLIENT_EMAIL?.trim();
-  let privateKey = process.env.GOOGLE_PRIVATE_KEY;
-  const clientId = process.env.GOOGLE_CLIENT_ID?.trim();
-  const clientSecret = process.env.GOOGLE_CLIENT_SECRET?.trim();
-  const refreshToken = process.env.GOOGLE_REFRESH_TOKEN?.trim();
+  const clientEmail = cleanEnv(process.env.GOOGLE_CLIENT_EMAIL);
+  let privateKey = cleanEnv(process.env.GOOGLE_PRIVATE_KEY);
+  const clientId = cleanEnv(process.env.GOOGLE_CLIENT_ID);
+  const clientSecret = cleanEnv(process.env.GOOGLE_CLIENT_SECRET);
+  const refreshToken = cleanEnv(process.env.GOOGLE_REFRESH_TOKEN);
 
   // 1. Try OAuth2 Refresh Token (Best for Personal Gmail Accounts - 15GB quota)
   if (clientId && clientSecret && refreshToken) {
@@ -16,10 +25,6 @@ async function getGDriveAuth() {
   } 
   // 2. Try Service Account (Best for Workspace Shared Drives)
   else if (clientEmail && privateKey) {
-    privateKey = privateKey.trim();
-    if ((privateKey.startsWith('"') && privateKey.endsWith('"')) || (privateKey.startsWith("'") && privateKey.endsWith("'"))) {
-      privateKey = privateKey.slice(1, -1);
-    }
     privateKey = privateKey.replace(/\\n/g, '\n');
 
     const jwtClient = new google.auth.JWT({
@@ -38,7 +43,7 @@ async function getGDriveAuth() {
 }
 
 export async function uploadToGoogleDrive({ buffer, fileName, mimeType }) {
-  const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID?.trim();
+  const folderId = cleanEnv(process.env.GOOGLE_DRIVE_FOLDER_ID);
   const auth = await getGDriveAuth();
   const drive = google.drive({ version: 'v3', auth });
 
