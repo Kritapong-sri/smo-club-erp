@@ -1,9 +1,10 @@
 'use client';
 import { useState } from 'react';
+import { ClipboardList, Banknote, UploadCloud, FileText, AlertCircle, CheckCircle2, X } from 'lucide-react';
 
 export default function BudgetImportModal({ isOpen, onClose, activityId, onImportSuccess }) {
   const [file, setFile] = useState(null);
-  const [type, setType] = useState('planned'); // planned or actual
+  const [type, setType] = useState('planned');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -80,52 +81,42 @@ export default function BudgetImportModal({ isOpen, onClose, activityId, onImpor
         padding: '24px',
         boxShadow: 'var(--shadow-xl)',
         border: '1px solid var(--border-primary)',
-        background: 'var(--bg-glass)',
+        background: 'var(--bg-surface)',
       }}>
-        <div style={{ display: 'flex', justifyContent: 'between', alignItems: 'center', marginBottom: '20px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
           <h2 style={{ fontSize: '20px', fontWeight: '700', color: 'var(--text-primary)' }}>นำเข้าข้อมูลจาก Google Sheets (CSV)</h2>
           <button 
             type="button" 
             onClick={onClose} 
-            className="btn btn-sm" 
-            style={{ 
-              background: 'transparent', 
-              fontSize: '20px', 
-              padding: '0 8px',
-              color: 'var(--text-tertiary)',
-              border: 'none',
-              cursor: 'pointer'
-            }}
+            className="btn btn-sm btn-ghost px-xs" 
           >
-            ✕
+            <X size={18} />
           </button>
         </div>
 
         <form onSubmit={handleSubmit}>
-          {/* File Type Selection */}
           <div className="mb-md">
             <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>ประเภทข้อมูลที่นำเข้า</label>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
               <button
                 type="button"
-                className={`btn ${type === 'planned' ? 'btn-primary' : 'btn-outline'}`}
+                className={`btn flex items-center justify-center gap-xs ${type === 'planned' ? 'btn-primary' : 'btn-outline'}`}
                 onClick={() => setType('planned')}
-                style={{ justifyContent: 'center' }}
               >
-                📝 แผนงบประมาณ (Money Plan)
+                <ClipboardList size={16} />
+                <span>แผนงบประมาณ (MP)</span>
               </button>
               <button
                 type="button"
-                className={`btn ${type === 'actual' ? 'btn-primary' : 'btn-outline'}`}
+                className={`btn flex items-center justify-center gap-xs ${type === 'actual' ? 'btn-primary' : 'btn-outline'}`}
                 onClick={() => setType('actual')}
-                style={{ justifyContent: 'center' }}
               >
-                💰 รายจ่ายจริง (Tracking Cost)
+                <Banknote size={16} />
+                <span>รายจ่ายจริง (Cost)</span>
               </button>
             </div>
           </div>
 
-          {/* File Input */}
           <div className="mb-md">
             <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>อัปโหลดไฟล์ CSV</label>
             <div style={{
@@ -148,9 +139,11 @@ export default function BudgetImportModal({ isOpen, onClose, activityId, onImpor
                   cursor: 'pointer'
                 }}
               />
-              <div style={{ fontSize: '32px', marginBottom: '8px' }}>📥</div>
+              <div style={{ display: 'flex', justifyContent: 'center' }}>
+                <UploadCloud size={36} style={{ color: 'var(--blue-500)', marginBottom: '8px' }} />
+              </div>
               <p style={{ fontWeight: '500', marginBottom: '4px' }}>คลิกหรือลากไฟล์ CSV มาวางที่นี่</p>
-              <p style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>รองรับเฉพาะไฟล์ .csv ที่ส่งออกจา่กหน้า Google Sheets</p>
+              <p style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>รองรับเฉพาะไฟล์ .csv ที่ส่งออกมาจาก Google Sheets</p>
             </div>
             {file && (
               <div style={{ 
@@ -163,20 +156,22 @@ export default function BudgetImportModal({ isOpen, onClose, activityId, onImpor
                 justifyContent: 'space-between',
                 alignItems: 'center'
               }}>
-                <span style={{ fontSize: '14px', color: 'var(--blue-700)', wordBreak: 'break-all' }}>📄 {file.name}</span>
+                <span className="flex items-center gap-xs" style={{ fontSize: '14px', color: 'var(--blue-700)', wordBreak: 'break-all' }}>
+                  <FileText size={16} /> {file.name}
+                </span>
                 <button 
                   type="button" 
                   onClick={() => setFile(null)} 
                   style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--color-danger)' }}
                 >
-                  ✕
+                  <X size={16} />
                 </button>
               </div>
             )}
           </div>
 
           {error && (
-            <div className="mb-md" style={{ 
+            <div className="mb-md flex items-center gap-xs" style={{ 
               padding: '10px 12px', 
               background: 'var(--color-danger-bg)', 
               color: 'var(--color-danger)', 
@@ -184,12 +179,13 @@ export default function BudgetImportModal({ isOpen, onClose, activityId, onImpor
               fontSize: '14px',
               fontWeight: '500'
             }}>
-              ⚠️ {error}
+              <AlertCircle size={16} />
+              <span>{error}</span>
             </div>
           )}
 
           {success && (
-            <div className="mb-md" style={{ 
+            <div className="mb-md flex items-center gap-xs" style={{ 
               padding: '10px 12px', 
               background: 'var(--color-success-bg)', 
               color: 'var(--color-success)', 
@@ -197,7 +193,8 @@ export default function BudgetImportModal({ isOpen, onClose, activityId, onImpor
               fontSize: '14px',
               fontWeight: '500'
             }}>
-              ✅ {success}
+              <CheckCircle2 size={16} />
+              <span>{success}</span>
             </div>
           )}
 

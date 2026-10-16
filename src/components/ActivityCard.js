@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import StatusBadge from './StatusBadge';
+import { Calendar } from 'lucide-react';
 
 export default function ActivityCard({ activity }) {
   const startDate = activity.startDate || activity.start_date;
@@ -10,7 +11,7 @@ export default function ActivityCard({ activity }) {
   
   return (
     <Link href={`/activities/${activity.id}`}>
-      <div className="activity-card">
+      <div className="activity-card hover-lift">
         {dept && (
           <div 
             className="activity-card-dept" 
@@ -24,7 +25,10 @@ export default function ActivityCard({ activity }) {
         </div>
         
         <div className="activity-card-meta">
-          <span>📅 {startDate ? new Date(startDate).toLocaleDateString('th-TH', { month: 'short', day: 'numeric', year: 'numeric' }) : 'ไม่ระบุวัน'}</span>
+          <span className="flex items-center gap-xs">
+            <Calendar size={14} style={{ color: 'var(--text-tertiary)' }} />
+            <span>{startDate ? new Date(startDate).toLocaleDateString('th-TH', { month: 'short', day: 'numeric', year: 'numeric' }) : 'ไม่ระบุวัน'}</span>
+          </span>
           {dept && <span className="dept-tag" style={{ color: dept.color, borderColor: dept.color }}>{dept.name}</span>}
         </div>
         

@@ -82,7 +82,10 @@ export async function POST(request, { params }) {
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const body = await request.json();
-    const { type, name, quantity, unit, pricePerUnit, category, subCategory, isReceived, note } = body;
+    const { 
+      type, deptName, name, quantity, unit, pricePerUnit, category, subCategory, 
+      refUrl, isReceived, billDate, disbursementType, createdByName, note 
+    } = body;
 
     if (!type || !name || !category) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -96,6 +99,7 @@ export async function POST(request, { params }) {
       data: {
         activityId,
         type,
+        deptName: deptName || null,
         name,
         quantity: qty,
         unit: unit || 'ชิ้น',
@@ -103,7 +107,11 @@ export async function POST(request, { params }) {
         total,
         category,
         subCategory: subCategory || null,
+        refUrl: refUrl || null,
         isReceived: !!isReceived,
+        billDate: billDate || null,
+        disbursementType: disbursementType || null,
+        createdByName: createdByName || session.name || null,
         note: note || null
       }
     });
@@ -122,7 +130,10 @@ export async function PUT(request) {
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     const body = await request.json();
-    const { id, type, name, quantity, unit, pricePerUnit, category, subCategory, isReceived, note } = body;
+    const { 
+      id, type, deptName, name, quantity, unit, pricePerUnit, category, subCategory, 
+      refUrl, isReceived, billDate, disbursementType, createdByName, note 
+    } = body;
 
     if (!id) {
       return NextResponse.json({ error: 'Missing budget item ID' }, { status: 400 });
@@ -130,9 +141,9 @@ export async function PUT(request) {
 
     const updateData = {};
     if (type !== undefined) updateData.type = type;
+    if (deptName !== undefined) updateData.deptName = deptName;
     if (name !== undefined) updateData.name = name;
     if (quantity !== undefined || pricePerUnit !== undefined) {
-      // Fetch current item to calculate total if one is missing
       const currentItem = await prisma.budgetItem.findUnique({ where: { id } });
       if (!currentItem) return NextResponse.json({ error: 'Item not found' }, { status: 404 });
       
@@ -145,7 +156,11 @@ export async function PUT(request) {
     if (unit !== undefined) updateData.unit = unit;
     if (category !== undefined) updateData.category = category;
     if (subCategory !== undefined) updateData.subCategory = subCategory;
+    if (refUrl !== undefined) updateData.refUrl = refUrl;
     if (isReceived !== undefined) updateData.isReceived = !!isReceived;
+    if (billDate !== undefined) updateData.billDate = billDate;
+    if (disbursementType !== undefined) updateData.disbursementType = disbursementType;
+    if (createdByName !== undefined) updateData.createdByName = createdByName;
     if (note !== undefined) updateData.note = note;
 
     const updatedItem = await prisma.budgetItem.update({

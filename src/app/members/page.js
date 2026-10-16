@@ -7,10 +7,11 @@ export const dynamic = 'force-dynamic';
 export default async function MembersPage() {
   const session = await getSession();
 
-  const members = await prisma.member.findMany({
+  const membersWithPasswords = await prisma.member.findMany({
     orderBy: { firstNameTh: 'asc' },
     include: { department: true }
   });
+  const members = membersWithPasswords.map(({ password: _password, ...member }) => member);
   
   const departments = await prisma.department.findMany();
 

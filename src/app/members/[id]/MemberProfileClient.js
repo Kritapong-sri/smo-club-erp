@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import { ArrowLeft, User, HeartPulse, Phone, Sparkles } from 'lucide-react';
 
 export default function MemberProfileClient({ member, session }) {
   const dept = member.department;
@@ -10,12 +11,12 @@ export default function MemberProfileClient({ member, session }) {
   return (
     <div className="page-container animate-fade-in">
       <div className="mb-md">
-        <Link href="/members" className="btn btn-ghost btn-sm px-0">
-          ← กลับหน้ารายชื่อสมาชิก
+        <Link href="/members" className="btn btn-ghost btn-sm px-0 flex items-center gap-xs">
+          <ArrowLeft size={16} /> กลับหน้ารายชื่อสมาชิก
         </Link>
       </div>
 
-      <div className="card mb-lg" style={{ display: 'flex', gap: 'var(--space-xl)', alignItems: 'center', padding: 'var(--space-xl)' }}>
+      <div className="card mb-lg hover-glow" style={{ display: 'flex', gap: 'var(--space-xl)', alignItems: 'center', padding: 'var(--space-xl)' }}>
         <div style={{
           width: '120px', height: '120px', borderRadius: 'var(--radius-full)',
           background: member.avatarUrl ? `url(${member.avatarUrl}) center/cover` : 'var(--gradient-primary)', 
@@ -32,7 +33,7 @@ export default function MemberProfileClient({ member, session }) {
           <div className="flex gap-sm flex-wrap items-center">
             {dept && (
               <span className="dept-tag" style={{ color: dept.color, borderColor: dept.color, fontSize: '14px', padding: '4px 12px' }}>
-                {dept.icon} {dept.name}
+                {dept.name}
               </span>
             )}
             <span style={{ fontWeight: '500', color: 'var(--text-primary)' }}>
@@ -43,9 +44,11 @@ export default function MemberProfileClient({ member, session }) {
       </div>
 
       <div className="grid-2 stagger-children">
-        {/* ข้อมูลเบื้องต้น */}
-        <div className="card">
-          <h3 className="mb-md" style={{ borderBottom: '1px solid var(--border-primary)', paddingBottom: '8px' }}>👤 ข้อมูลเบื้องต้น (Basic Info)</h3>
+        <div className="card hover-glow">
+          <h3 className="mb-md flex items-center gap-xs" style={{ borderBottom: '1px solid var(--border-primary)', paddingBottom: '8px' }}>
+            <User size={18} style={{ color: 'var(--blue-600)' }} />
+            <span>ข้อมูลเบื้องต้น (Basic Info)</span>
+          </h3>
           <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '12px', lineHeight: '1.6' }}>
             <div className="text-secondary">รหัสนิสิต:</div>
             <div className="font-en font-medium">{member.studentId || '-'}</div>
@@ -70,9 +73,11 @@ export default function MemberProfileClient({ member, session }) {
           </div>
         </div>
 
-        {/* ข้อมูลสุขภาพ */}
-        <div className="card">
-          <h3 className="mb-md" style={{ borderBottom: '1px solid var(--border-primary)', paddingBottom: '8px' }}>🏥 ข้อมูลสุขภาพ (Health & Medical)</h3>
+        <div className="card hover-glow">
+          <h3 className="mb-md flex items-center gap-xs" style={{ borderBottom: '1px solid var(--border-primary)', paddingBottom: '8px' }}>
+            <HeartPulse size={18} style={{ color: 'var(--color-danger)' }} />
+            <span>ข้อมูลสุขภาพ (Health & Medical)</span>
+          </h3>
           <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '12px', lineHeight: '1.6' }}>
             <div className="text-secondary">กรุ๊ปเลือด:</div>
             <div className="font-en font-bold text-danger">{member.bloodGroup || '-'}</div>
@@ -89,9 +94,11 @@ export default function MemberProfileClient({ member, session }) {
           </div>
         </div>
 
-        {/* ข้อมูลการติดต่อ */}
-        <div className="card">
-          <h3 className="mb-md" style={{ borderBottom: '1px solid var(--border-primary)', paddingBottom: '8px' }}>📞 การติดต่อ (Contact Info)</h3>
+        <div className="card hover-glow">
+          <h3 className="mb-md flex items-center gap-xs" style={{ borderBottom: '1px solid var(--border-primary)', paddingBottom: '8px' }}>
+            <Phone size={18} style={{ color: 'var(--blue-600)' }} />
+            <span>การติดต่อ (Contact Info)</span>
+          </h3>
           <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '12px', lineHeight: '1.6' }}>
             <div className="text-secondary">เบอร์โทรศัพท์:</div>
             <div className="font-en">{member.phone || '-'}</div>
@@ -110,9 +117,11 @@ export default function MemberProfileClient({ member, session }) {
           </div>
         </div>
 
-        {/* ข้อมูลเพิ่มเติม */}
-        <div className="card">
-          <h3 className="mb-md" style={{ borderBottom: '1px solid var(--border-primary)', paddingBottom: '8px' }}>✨ ข้อมูลอื่นๆ (Additional Info)</h3>
+        <div className="card hover-glow">
+          <h3 className="mb-md flex items-center gap-xs" style={{ borderBottom: '1px solid var(--border-primary)', paddingBottom: '8px' }}>
+            <Sparkles size={18} style={{ color: 'var(--blue-600)' }} />
+            <span>ข้อมูลอื่นๆ (Additional Info)</span>
+          </h3>
           <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '12px', lineHeight: '1.6' }}>
             <div className="text-secondary">ไซส์เสื้อ:</div>
             <div className="font-en font-medium">{member.shirtSize || '-'}</div>
@@ -133,7 +142,6 @@ export default function MemberProfileClient({ member, session }) {
             </div>
           </div>
         </div>
-
       </div>
     </div>
   );

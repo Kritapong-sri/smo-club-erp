@@ -1,4 +1,5 @@
 'use client';
+import { FileText, Banknote, AlertTriangle, Wallet } from 'lucide-react';
 
 export default function BudgetDashboard({ summary }) {
   const { budgetApproved = 0, planned = {}, actual = {}, remaining = 0 } = summary || {};
@@ -7,21 +8,16 @@ export default function BudgetDashboard({ summary }) {
   const actualTotal = actual.total || 0;
   const spentPercent = budgetApproved > 0 ? Math.min(Math.round((actualTotal / budgetApproved) * 100), 100) : 0;
   
-  // Clean values for display
   const fmt = (val) => `฿${Math.round(val).toLocaleString()}`;
 
-  // SVG Chart Calculations
-  // Categories: ค่าตอบแทน (Compensation), ค่าใช้สอย (Operating), ค่าวัสดุ (Materials)
   const categories = [
     { label: 'ค่าตอบแทน', planned: planned.compensation || 0, actual: actual.compensation || 0, colorPlanned: 'var(--blue-300)', colorActual: 'var(--blue-600)' },
     { label: 'ค่าใช้สอย', planned: planned.operating || 0, actual: actual.operating || 0, colorPlanned: 'rgba(245, 158, 11, 0.4)', colorActual: 'var(--color-warning)' },
     { label: 'ค่าวัสดุ', planned: planned.materials || 0, actual: actual.materials || 0, colorPlanned: 'rgba(16, 185, 129, 0.4)', colorActual: 'var(--color-success)' }
   ];
 
-  // Find max value to scale chart bars
   const maxVal = Math.max(...categories.map(c => Math.max(c.planned, c.actual)), 10000);
 
-  // SVG circular progress configs
   const radius = 50;
   const strokeWidth = 10;
   const circumference = 2 * Math.PI * radius;
@@ -29,11 +25,11 @@ export default function BudgetDashboard({ summary }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-      {/* Stat Cards */}
-      <div className="grid-3">
-        {/* Approved Budget */}
-        <div className="stat-card" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-primary)' }}>
-          <div className="stat-icon" style={{ backgroundColor: 'rgba(56, 189, 248, 0.2)', color: 'var(--blue-600)' }}>📋</div>
+      <div className="grid-3 stagger-children">
+        <div className="stat-card hover-lift" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-primary)' }}>
+          <div className="stat-icon" style={{ backgroundColor: 'rgba(56, 189, 248, 0.15)', color: 'var(--blue-600)' }}>
+            <FileText size={20} />
+          </div>
           <div className="stat-value">{fmt(budgetApproved)}</div>
           <div className="stat-label">งบประมาณอนุมัติทั้งหมด</div>
           <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginTop: '4px' }}>
@@ -41,15 +37,15 @@ export default function BudgetDashboard({ summary }) {
           </div>
         </div>
 
-        {/* Actual Expenses */}
-        <div className="stat-card" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-primary)', position: 'relative', overflow: 'hidden' }}>
-          <div className="stat-icon" style={{ backgroundColor: 'rgba(16, 185, 129, 0.2)', color: 'var(--color-success)' }}>💸</div>
+        <div className="stat-card hover-lift" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-primary)', position: 'relative', overflow: 'hidden' }}>
+          <div className="stat-icon" style={{ backgroundColor: 'rgba(16, 185, 129, 0.15)', color: 'var(--color-success)' }}>
+            <Banknote size={20} />
+          </div>
           <div className="stat-value" style={{ color: actualTotal > budgetApproved ? 'var(--color-danger)' : 'var(--text-primary)' }}>
             {fmt(actualTotal)}
           </div>
           <div className="stat-label">รายจ่ายเกิดขึ้นจริง</div>
           
-          {/* Simple progress bar inside card */}
           <div className="progress-bar mt-sm" style={{ height: '6px' }}>
             <div 
               className="progress-fill" 
@@ -65,17 +61,16 @@ export default function BudgetDashboard({ summary }) {
           </div>
         </div>
 
-        {/* Remaining Budget */}
-        <div className="stat-card" style={{ 
+        <div className="stat-card hover-lift" style={{ 
           background: 'var(--bg-glass)', 
           border: remaining < 0 ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid var(--border-primary)',
           backgroundColor: remaining < 0 ? 'rgba(239, 68, 68, 0.03)' : 'var(--bg-surface)'
         }}>
           <div className="stat-icon" style={{ 
-            backgroundColor: remaining < 0 ? 'var(--color-danger-bg)' : 'rgba(245, 158, 11, 0.2)', 
+            backgroundColor: remaining < 0 ? 'var(--color-danger-bg)' : 'rgba(245, 158, 11, 0.15)', 
             color: remaining < 0 ? 'var(--color-danger)' : 'var(--color-warning)' 
           }}>
-            {remaining < 0 ? '⚠️' : '💰'}
+            {remaining < 0 ? <AlertTriangle size={20} /> : <Wallet size={20} />}
           </div>
           <div className="stat-value" style={{ color: remaining < 0 ? 'var(--color-danger)' : 'var(--text-primary)' }}>
             {fmt(remaining)}
@@ -87,10 +82,8 @@ export default function BudgetDashboard({ summary }) {
         </div>
       </div>
 
-      {/* Charts Panel */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '24px', ...({ '@media (min-width: 1024px)': { gridTemplateColumns: '2fr 1fr' } }) }} className="desktop-grid-2">
-        {/* Category Breakdown (Bar Chart) */}
-        <div className="card" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-primary)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '24px' }} className="desktop-grid-2">
+        <div className="card hover-glow" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-primary)' }}>
           <h3 className="mb-md">เปรียบเทียบงบประมาณรายหมวด (แผนงาน vs จ่ายจริง)</h3>
           
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', padding: '10px 0' }}>
@@ -107,9 +100,7 @@ export default function BudgetDashboard({ summary }) {
                     </span>
                   </div>
 
-                  {/* Horizontal Bar Chart Container */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', background: 'rgba(0,0,0,0.02)', padding: '6px', borderRadius: 'var(--radius-sm)' }}>
-                    {/* Planned Bar */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <span style={{ fontSize: '11px', color: 'var(--text-tertiary)', width: '32px' }}>แผน</span>
                       <div style={{ flexGrow: 1, height: '12px', background: 'rgba(0,0,0,0.05)', borderRadius: '999px', overflow: 'hidden' }}>
@@ -125,7 +116,6 @@ export default function BudgetDashboard({ summary }) {
                       </div>
                     </div>
 
-                    {/* Actual Bar */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <span style={{ fontSize: '11px', color: 'var(--text-tertiary)', width: '32px' }}>จริง</span>
                       <div style={{ flexGrow: 1, height: '12px', background: 'rgba(0,0,0,0.05)', borderRadius: '999px', overflow: 'hidden' }}>
@@ -146,7 +136,6 @@ export default function BudgetDashboard({ summary }) {
             })}
           </div>
 
-          {/* Chart Legend */}
           <div style={{ display: 'flex', gap: '16px', marginTop: '16px', fontSize: '12px', color: 'var(--text-tertiary)', justifyContent: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <span style={{ display: 'inline-block', width: '12px', height: '12px', borderRadius: '2px', background: 'var(--blue-300)' }} />
@@ -163,13 +152,11 @@ export default function BudgetDashboard({ summary }) {
           </div>
         </div>
 
-        {/* Visual Progress Ring */}
-        <div className="card" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-primary)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
+        <div className="card hover-glow" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-primary)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' }}>
           <h3 className="mb-md" style={{ width: '100%' }}>ความก้าวหน้าการเบิกจ่าย</h3>
           
           <div style={{ position: 'relative', width: '150px', height: '150px', margin: '20px 0' }}>
             <svg width="150" height="150" viewBox="0 0 120 120" style={{ transform: 'rotate(-90deg)' }}>
-              {/* Outer Track */}
               <circle
                 cx="60"
                 cy="60"
@@ -178,7 +165,6 @@ export default function BudgetDashboard({ summary }) {
                 stroke="rgba(0, 0, 0, 0.05)"
                 strokeWidth={strokeWidth}
               />
-              {/* Progress Circle */}
               <circle
                 cx="60"
                 cy="60"

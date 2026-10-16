@@ -1,8 +1,17 @@
 'use client';
-import { useRef } from 'react';
+import { CalendarRange } from 'lucide-react';
 import CompactActivityCard from './CompactActivityCard';
 
 export default function ActivityCarousel({ activities }) {
+  if (!activities.length) {
+    return (
+      <div className="empty-state compact-empty-state">
+        <CalendarRange size={30} aria-hidden="true" />
+        <p>ยังไม่มีกิจกรรมในระบบ</p>
+      </div>
+    );
+  }
+
   return (
     <div style={{ position: 'relative', width: '100%', minWidth: 0 }}>
       {/* Scroll Container */}

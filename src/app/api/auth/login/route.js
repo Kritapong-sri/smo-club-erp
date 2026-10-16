@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { createSession } from '@/lib/session';
+import { hashPassword, isPasswordHash, verifyPassword } from '@/lib/password';
 
 export async function POST(request) {
   try {
@@ -16,8 +17,6 @@ export async function POST(request) {
     studentId = studentId.trim();
     password = password.trim();
 
-    console.log(`[LOGIN ATTEMPT] studentId: ${studentId}, password: ${password}`);
-
     // ค้นหาสมาชิกในฐานข้อมูล
     const member = await prisma.member.findUnique({
       where: { studentId },
@@ -31,15 +30,20 @@ export async function POST(request) {
       );
     }
 
-    // ตรวจสอบว่าพบสมาชิกและรหัสผ่านตรงกันหรือไม่
-    // ถ้า password ใน DB เป็น null = ยังไม่ได้ตั้ง → ใช้รหัสนิสิตเป็นรหัสผ่านเริ่มต้น
-    const expectedPassword = member.password || member.studentId;
-    if (expectedPassword !== password) {
-      console.log(`[LOGIN FAILED] Invalid password for studentId: ${studentId}. Expected: ${member.password}`);
+    // รองรับข้อมูลเดิมที่เป็น plaintext/null แล้วอัปเกรดเป็น hash หลังล็อกอินสำเร็จ
+    const isValidPassword = await verifyPassword(password, member.password, member.studentId);
+    if (!isValidPassword) {
       return NextResponse.json(
         { error: 'รหัสนิสิตหรือรหัสผ่านไม่ถูกต้อง' },
         { status: 401 }
       );
+    }
+
+    if (!isPasswordHash(member.password)) {
+      await prisma.member.update({
+        where: { id: member.id },
+        data: { password: await hashPassword(password) },
+      });
     }
 
     // สร้าง Session Cookie
@@ -48,9 +52,6 @@ export async function POST(request) {
     return NextResponse.json({ success: true, message: 'เข้าสู่ระบบสำเร็จ' });
   } catch (error) {
     console.error('Login error:', error);
-    return NextResponse.json(
-      { error: `เกิดข้อผิดพลาดในการเข้าสู่ระบบ: ${error.message}` },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ' }, { status: 500 });
   }
 }

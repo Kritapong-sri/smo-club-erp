@@ -3,12 +3,12 @@ import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import BudgetDashboard from '@/components/BudgetDashboard';
 import StatusBadge from '@/components/StatusBadge';
+import { PieChart, Clock, RotateCcw, FileText, CheckCircle2, Folder, Search } from 'lucide-react';
 
 export default function TreasurerClient({ initialActivities, departments }) {
   const [selectedProjectId, setSelectedProjectId] = useState('all');
   const [selectedDeptId, setSelectedDeptId] = useState('all');
 
-  // Compute stats based on filters
   const filteredActivities = useMemo(() => {
     return initialActivities.filter(act => {
       const matchProject = selectedProjectId === 'all' || act.id === selectedProjectId;
@@ -17,12 +17,9 @@ export default function TreasurerClient({ initialActivities, departments }) {
     });
   }, [initialActivities, selectedProjectId, selectedDeptId]);
 
-  // Aggregate budget items from filtered activities
   const aggregatedSummary = useMemo(() => {
-    // Collect all activities that match the filters
     const acts = filteredActivities;
     
-    // Total budget approved is sum of budgetApproved of filtered activities
     const budgetApproved = acts.reduce((sum, a) => sum + (a.budgetApproved || 0), 0);
     
     const summary = {
@@ -58,31 +55,30 @@ export default function TreasurerClient({ initialActivities, departments }) {
     return summary;
   }, [filteredActivities]);
 
-  // Helper to format currency
   const fmt = (val) => `฿${Math.round(val).toLocaleString()}`;
 
-  // Activities pending treasurer check
   const pendingActivities = initialActivities.filter(a => a.status === 'pending_treasurer');
 
   return (
     <div className="page-container animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       
-      {/* Page Header */}
-      <div className="card" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-primary)', padding: '24px' }}>
+      <div className="card hover-glow" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-primary)', padding: '24px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
           <div>
-            <h1 style={{ fontSize: '24px', fontWeight: '800', color: 'var(--text-primary)', margin: 0 }}>📊 แดชบอร์ดการเงินสโมสรนิสิต (Treasurer Hub)</h1>
+            <h1 style={{ fontSize: '24px', fontWeight: '800', color: 'var(--text-primary)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <PieChart size={24} style={{ color: 'var(--blue-600)' }} />
+              <span>แดชบอร์ดการเงินสโมสรนิสิต (Treasurer Hub)</span>
+            </h1>
             <p style={{ fontSize: '14px', color: 'var(--text-tertiary)', marginTop: '4px' }}>ภาพรวมงบประมาณรายรับ-รายจ่าย คัดกรอง ค้นหา และอนุมัติโครงการ</p>
           </div>
           
-          {/* Pending counter button */}
-          <Link href="#pending-reviews" className="btn btn-secondary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span>⏳ รอตรวจงบ:</span>
+          <Link href="#pending-reviews" className="btn btn-secondary btn-sm hover-scale" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Clock size={14} style={{ color: 'var(--color-warning)' }} />
+            <span>รอตรวจงบ:</span>
             <span className="status-badge pending_review" style={{ fontSize: '12px' }}>{pendingActivities.length} โครงการ</span>
           </Link>
         </div>
 
-        {/* Filter Bar */}
         <div style={{ 
           display: 'grid', 
           gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
@@ -98,11 +94,10 @@ export default function TreasurerClient({ initialActivities, departments }) {
               value={selectedProjectId} 
               onChange={e => {
                 setSelectedProjectId(e.target.value);
-                // Reset department filter if selecting specific project to avoid empty results
                 if (e.target.value !== 'all') setSelectedDeptId('all');
               }}
             >
-              <option value="all">📂 โครงการทั้งหมด ({initialActivities.length})</option>
+              <option value="all">โครงการทั้งหมด ({initialActivities.length})</option>
               {initialActivities.map(a => (
                 <option key={a.id} value={a.id}>
                   {a.title} ({a.status === 'approved' ? 'อนุมัติแล้ว' : a.status === 'completed' ? 'เสร็จสิ้น' : 'แบบร่าง'})
@@ -121,32 +116,34 @@ export default function TreasurerClient({ initialActivities, departments }) {
                 if (e.target.value !== 'all') setSelectedProjectId('all');
               }}
             >
-              <option value="all">🏢 ฝ่ายทั้งหมด ({departments.length})</option>
+              <option value="all">ฝ่ายทั้งหมด ({departments.length})</option>
               {departments.map(d => (
-                <option key={d.id} value={d.id}>{d.icon} {d.name}</option>
+                <option key={d.id} value={d.id}>{d.name}</option>
               ))}
             </select>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'flex-end' }}>
             <button 
-              className="btn btn-outline" 
+              className="btn btn-outline hover-lift flex items-center justify-center gap-xs" 
               onClick={() => { setSelectedProjectId('all'); setSelectedDeptId('all'); }} 
-              style={{ width: '100%', justifyContent: 'center' }}
+              style={{ width: '100%' }}
             >
-              🔄 ล้างฟิลเตอร์
+              <RotateCcw size={14} />
+              <span>ล้างฟิลเตอร์</span>
             </button>
           </div>
         </div>
       </div>
 
-      {/* Aggregate Finance Dashboard */}
       <BudgetDashboard summary={aggregatedSummary} />
 
-      {/* Pending Reviews Section */}
-      <div id="pending-reviews" className="card" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-primary)', padding: '20px' }}>
+      <div id="pending-reviews" className="card hover-glow" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-primary)', padding: '20px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <h3 style={{ margin: 0 }}>📝 กิจกรรมที่ส่งตรวจงบ (Pending Budget Reviews)</h3>
+          <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <FileText size={18} style={{ color: 'var(--blue-600)' }} />
+            <span>กิจกรรมที่ส่งตรวจงบ (Pending Budget Reviews)</span>
+          </h3>
           <span className="status-badge pending_review">{pendingActivities.length} รายการ</span>
         </div>
         
@@ -183,7 +180,10 @@ export default function TreasurerClient({ initialActivities, departments }) {
               {pendingActivities.length === 0 && (
                 <tr>
                   <td colSpan="6" style={{ textAlign: 'center', padding: '24px', color: 'var(--text-tertiary)' }}>
-                    ✅ ตรวจสอบครบทุกโครงการแล้ว ไม่มีงานค้าง
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                      <CheckCircle2 size={16} style={{ color: 'var(--color-success)' }} />
+                      <span>ตรวจสอบครบทุกโครงการแล้ว ไม่มีงานค้าง</span>
+                    </div>
                   </td>
                 </tr>
               )}
@@ -192,9 +192,11 @@ export default function TreasurerClient({ initialActivities, departments }) {
         </div>
       </div>
 
-      {/* Projects Health Overview */}
-      <div className="card" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-primary)', padding: '20px' }}>
-        <h3 className="mb-md">📂 สถานะการเงินจำแนกตามโครงการ (Projects Financial Health)</h3>
+      <div className="card hover-glow" style={{ background: 'var(--bg-glass)', border: '1px solid var(--border-primary)', padding: '20px' }}>
+        <h3 className="mb-md flex items-center gap-xs">
+          <Folder size={18} style={{ color: 'var(--blue-600)' }} />
+          <span>สถานะการเงินจำแนกตามโครงการ (Projects Financial Health)</span>
+        </h3>
         
         <div className="table-wrapper">
           <table>
@@ -243,7 +245,7 @@ export default function TreasurerClient({ initialActivities, departments }) {
                   <tr key={act.id}>
                     <td className="font-medium">{act.title}</td>
                     <td>
-                      {dept && <span className="dept-tag" style={{ color: dept.color, borderColor: dept.color }}>{dept.icon} {dept.name}</span>}
+                      {dept && <span className="dept-tag" style={{ color: dept.color, borderColor: dept.color }}>{dept.name}</span>}
                     </td>
                     <td className="text-right font-en font-bold text-success">{fmt(approved)}</td>
                     <td className="text-right font-en">{fmt(planned)}</td>
@@ -255,8 +257,8 @@ export default function TreasurerClient({ initialActivities, departments }) {
                       </span>
                     </td>
                     <td>
-                      <Link href={`/activities/${act.id}`} className="btn btn-sm btn-outline">
-                        🔎 ดูระบบการเงิน
+                      <Link href={`/activities/${act.id}`} className="btn btn-sm btn-outline flex items-center gap-xs">
+                        <Search size={13} /> ดูระบบการเงิน
                       </Link>
                     </td>
                   </tr>

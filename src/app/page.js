@@ -1,16 +1,15 @@
-import StatCard from '@/components/StatCard';
+import Link from 'next/link';
 import ActivityCarousel from '@/components/ActivityCarousel';
 import CalendarWidget from '@/components/CalendarWidget';
 import AnnouncementBoard from '@/components/AnnouncementBoard';
 import { prisma } from '@/lib/prisma';
 import { getSession } from '@/lib/session';
+import { FileText, ArrowRight, ClipboardPenLine, Hourglass, BadgeCheck } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
 export default async function Home() {
   const session = await getSession();
-  const userRole = session ? session.positionTitle : null;
-
   const activities = await prisma.activity.findMany({
     orderBy: { createdAt: 'desc' },
     include: { department: true }
@@ -33,51 +32,58 @@ export default async function Home() {
 
   return (
     <div className="page-container animate-fade-in">
-      <div className="page-header">
+      <div className="page-header mb-lg">
         <h1>Dashboard</h1>
         <p>ภาพรวมสโมสรประจำปีการศึกษา 2569</p>
       </div>
 
-      <div className="grid-3 mb-lg stagger-children">
-        <div className="card">
-          <div className="stat-label text-sm font-semibold text-tertiary mb-xs">กำลังดำเนินการ</div>
-          <div className="stat-value" style={{ color: 'var(--color-warning)' }}>
-            {activities.filter(a => a.status === 'draft' || a.status === 'revision').length}
+      <div className="overview-grid mb-lg stagger-children">
+        <div className="overview-card warning">
+          <div className="overview-icon"><ClipboardPenLine size={20} strokeWidth={1.8} /></div>
+          <div>
+            <div className="stat-label">กำลังดำเนินการ</div>
+            <div className="stat-value">{activities.filter(a => a.status === 'draft' || a.status === 'revision').length}</div>
+            <div className="stat-helper">ฉบับร่างและรายการที่ต้องแก้ไข</div>
           </div>
         </div>
 
-        <div className="card">
-          <div className="stat-label text-sm font-semibold text-tertiary mb-xs">รอตรวจ</div>
-          <div className="stat-value" style={{ color: 'var(--color-info)' }}>
-            {activities.filter(a => a.status === 'pending_review').length}
+        <div className="overview-card info">
+          <div className="overview-icon"><Hourglass size={20} strokeWidth={1.8} /></div>
+          <div>
+            <div className="stat-label">รอตรวจ</div>
+            <div className="stat-value">{activities.filter(a => a.status === 'pending_review').length}</div>
+            <div className="stat-helper">รายการที่อยู่ระหว่างการพิจารณา</div>
           </div>
         </div>
 
-        <div className="card">
-          <div className="stat-label text-sm font-semibold text-tertiary mb-xs">อนุมัติแล้ว</div>
-          <div className="stat-value" style={{ color: 'var(--color-success)' }}>
-            {activities.filter(a => a.status === 'approved' || a.status === 'completed').length}
+        <div className="overview-card success">
+          <div className="overview-icon"><BadgeCheck size={20} strokeWidth={1.8} /></div>
+          <div>
+            <div className="stat-label">อนุมัติแล้ว</div>
+            <div className="stat-value">{activities.filter(a => a.status === 'approved' || a.status === 'completed').length}</div>
+            <div className="stat-helper">กิจกรรมที่อนุมัติหรือเสร็จสิ้นแล้ว</div>
           </div>
         </div>
       </div>
 
-      <div className="card mb-lg" style={{ padding: '24px' }}>
-        <div className="flex items-center justify-between mb-md">
+      <section className="card section-card mb-lg">
+        <div className="section-header mb-md">
           <div className="flex items-center gap-sm">
-            <span style={{ color: 'var(--blue-600)', fontSize: '20px' }}>📄</span>
+            <FileText size={20} style={{ color: 'var(--blue-600)' }} strokeWidth={1.8} />
             <h3 style={{ margin: 0, fontSize: '18px' }}>กิจกรรมล่าสุด</h3>
           </div>
-          <a href="/activities" className="btn btn-ghost btn-sm" style={{ color: 'var(--blue-600)' }}>ดูทั้งหมด →</a>
+          <Link href="/activities" className="btn btn-ghost btn-sm flex items-center gap-xs" style={{ color: 'var(--blue-600)' }}>
+            ดูทั้งหมด <ArrowRight size={14} strokeWidth={1.8} />
+          </Link>
         </div>
 
-        <ActivityCarousel activities={activities.slice(0, 8)} />
-      </div>
+        <ActivityCarousel activities={recentActivities} />
+      </section>
 
       <div className="grid-2">
-        {/* ใช้ Component AnnouncementBoard แทนโค้ดเดิม */}
         <AnnouncementBoard initialAnnouncements={announcements} session={session} />
 
-        <div className="card">
+        <div className="card section-card">
           <h3 className="mb-md">ปฏิทินกิจกรรม</h3>
           <CalendarWidget events={calendarEvents} />
         </div>

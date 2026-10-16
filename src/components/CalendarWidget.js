@@ -1,8 +1,9 @@
 'use client';
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, ListFilter } from 'lucide-react';
 
 export default function CalendarWidget({ events = [], onDateSelect }) {
-  const today = new Date();
+  const [today] = useState(() => new Date());
   const [selectedDate, setSelectedDate] = useState(today);
   const [viewMonth, setViewMonth] = useState(today.getMonth());
   const [viewYear, setViewYear] = useState(today.getFullYear());
@@ -29,13 +30,11 @@ export default function CalendarWidget({ events = [], onDateSelect }) {
     if (newMonth < 0) { newMonth = 11; newYear--; }
     setViewMonth(newMonth);
     setViewYear(newYear);
-    // Reset scroll to beginning
     setTimeout(() => {
       if (scrollRef.current) scrollRef.current.scrollLeft = 0;
     }, 50);
   };
 
-  // Auto-scroll to today on mount
   useEffect(() => {
     const container = scrollRef.current;
     if (!container) return;
@@ -43,7 +42,7 @@ export default function CalendarWidget({ events = [], onDateSelect }) {
     const itemWidth = 56;
     const offset = todayIndex * itemWidth - container.clientWidth / 2 + itemWidth / 2;
     container.scrollLeft = Math.max(0, offset);
-  }, []);
+  }, [today]);
 
   const handleDateClick = (day) => {
     const newSelected = new Date(year, month, day);
@@ -68,7 +67,6 @@ export default function CalendarWidget({ events = [], onDateSelect }) {
     return today.getDate() === day && today.getMonth() === month && today.getFullYear() === year;
   };
 
-  // Styles
   const headerStyle = {
     display: 'flex',
     alignItems: 'center',
@@ -84,8 +82,8 @@ export default function CalendarWidget({ events = [], onDateSelect }) {
   };
 
   const arrowBtnStyle = {
-    width: '36px',
-    height: '36px',
+    width: '32px',
+    height: '32px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -93,7 +91,6 @@ export default function CalendarWidget({ events = [], onDateSelect }) {
     borderRadius: '10px',
     background: 'var(--bg-surface)',
     cursor: 'pointer',
-    fontSize: '14px',
     color: 'var(--text-primary)',
     userSelect: 'none',
     WebkitUserSelect: 'none',
@@ -102,9 +99,8 @@ export default function CalendarWidget({ events = [], onDateSelect }) {
 
   const scrollContainerStyle = {
     display: 'flex',
-    gap: '8px',
+    gap: '6px',
     overflowX: 'auto',
-    overflowY: 'hidden',
     paddingBottom: '8px',
     scrollBehavior: 'smooth',
     WebkitOverflowScrolling: 'touch',
@@ -113,43 +109,42 @@ export default function CalendarWidget({ events = [], onDateSelect }) {
   };
 
   const getDayStyle = (day) => {
-    const selected = selectedDate.getDate() === day && selMonth === month && selYear === year;
-    const todayDay = isToday(day);
+    const selected = selectedDate.getDate() === day && selectedDate.getMonth() === month && selectedDate.getFullYear() === year;
+    const todayCheck = isToday(day);
 
     return {
-      flex: '0 0 48px',
-      width: '48px',
-      height: '68px',
+      minWidth: '48px',
+      height: '60px',
+      borderRadius: '14px',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
+      gap: '2px',
       cursor: 'pointer',
-      borderRadius: '14px',
-      background: selected ? 'linear-gradient(135deg, var(--blue-500), var(--blue-600))' : (todayDay ? 'var(--blue-50, #EBF5FF)' : 'var(--bg-surface)'),
-      color: selected ? 'white' : 'var(--text-primary)',
-      border: selected ? '2px solid var(--blue-500)' : (todayDay ? '2px solid var(--blue-300, #93C5FD)' : '1px solid var(--border-secondary)'),
-      transition: 'all 0.2s ease',
+      flexShrink: 0,
+      transition: 'all 0.15s cubic-bezier(0.4, 0, 0.2, 1)',
+      border: selected ? 'none' : todayCheck ? '1px solid var(--blue-400)' : '1px solid var(--border-secondary)',
+      background: selected ? 'var(--gradient-primary)' : todayCheck ? 'var(--blue-50, #EBF5FF)' : 'var(--bg-surface)',
+      color: selected ? '#ffffff' : todayCheck ? 'var(--blue-600)' : 'var(--text-primary)',
+      boxShadow: selected ? '0 4px 12px rgba(2, 132, 199, 0.3)' : 'none',
       position: 'relative',
-      boxShadow: selected ? '0 4px 12px rgba(59, 130, 246, 0.3)' : 'none',
-      userSelect: 'none',
-      WebkitUserSelect: 'none',
     };
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-      {/* Header */}
+    <div style={{ userSelect: 'none' }}>
       <div style={headerStyle}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <button
             type="button"
             onClick={() => changeMonth(-1)}
-            style={{ ...arrowBtnStyle, width: '28px', height: '28px', fontSize: '12px', borderRadius: '8px' }}
+            aria-label="เดือนก่อนหน้า"
+            style={{ ...arrowBtnStyle, width: '28px', height: '28px', borderRadius: '8px' }}
             onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg-surface-hover)'; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-surface)'; }}
           >
-            ‹
+            <ChevronLeft size={16} />
           </button>
           <h3 style={monthLabelStyle}>
             {monthNames[month]} {year + 543}
@@ -157,36 +152,38 @@ export default function CalendarWidget({ events = [], onDateSelect }) {
           <button
             type="button"
             onClick={() => changeMonth(1)}
-            style={{ ...arrowBtnStyle, width: '28px', height: '28px', fontSize: '12px', borderRadius: '8px' }}
+            aria-label="เดือนถัดไป"
+            style={{ ...arrowBtnStyle, width: '28px', height: '28px', borderRadius: '8px' }}
             onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg-surface-hover)'; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-surface)'; }}
           >
-            ›
+            <ChevronRight size={16} />
           </button>
         </div>
         <div style={{ display: 'flex', gap: '6px' }}>
           <button
             type="button"
             onClick={() => scrollDays(-1)}
+            aria-label="เลื่อนวันไปทางซ้าย"
             style={arrowBtnStyle}
             onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg-surface-hover)'; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-surface)'; }}
           >
-            ◀
+            <ChevronLeft size={16} />
           </button>
           <button
             type="button"
             onClick={() => scrollDays(1)}
+            aria-label="เลื่อนวันไปทางขวา"
             style={arrowBtnStyle}
             onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg-surface-hover)'; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-surface)'; }}
           >
-            ▶
+            <ChevronRight size={16} />
           </button>
         </div>
       </div>
 
-      {/* Scrollable Days Strip */}
       <div ref={scrollRef} style={scrollContainerStyle}>
         {Array.from({ length: daysInMonth }).map((_, i) => {
           const day = i + 1;
@@ -215,7 +212,6 @@ export default function CalendarWidget({ events = [], onDateSelect }) {
               <span style={{ fontSize: '18px', fontWeight: selected ? 700 : 500, lineHeight: 1.2 }}>
                 {day}
               </span>
-              {/* Event dots */}
               {dayEvents.length > 0 && (
                 <div style={{ display: 'flex', gap: '2px', position: 'absolute', bottom: '5px' }}>
                   {dayEvents.slice(0, 3).map((e, idx) => (
@@ -231,15 +227,13 @@ export default function CalendarWidget({ events = [], onDateSelect }) {
         })}
       </div>
 
-      {/* Hide scrollbar via injected style */}
       <style>{`
         div[style*="overflowX"]::-webkit-scrollbar { display: none; }
       `}</style>
 
-      {/* Selected Day Details */}
       <div style={{ borderTop: '1px solid var(--border-primary)', paddingTop: '12px', marginTop: '4px' }}>
-        <h4 style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '10px', fontWeight: 600 }}>
-          📋 รายการวันที่ {selectedDate.getDate()} {monthNames[selectedDate.getMonth()]}
+        <h4 style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '10px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <ListFilter size={15} /> รายการวันที่ {selectedDate.getDate()} {monthNames[selectedDate.getMonth()]}
         </h4>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
           {selectedEvents.length > 0 ? (

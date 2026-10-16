@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import ActivityCard from '@/components/ActivityCard';
+import { Plus, X, FilePlus, CheckCircle2, Loader2, ClipboardList } from 'lucide-react';
 
 export default function ActivitiesClient({ initialActivities, departments, session }) {
   const [activities, setActivities] = useState(initialActivities);
@@ -16,7 +17,6 @@ export default function ActivitiesClient({ initialActivities, departments, sessi
     ))
   );
 
-  // --- 2. Form State (ตัวแปรเก็บค่าฟอร์มสร้างกิจกรรม) ---
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -37,6 +37,11 @@ export default function ActivitiesClient({ initialActivities, departments, sessi
     e.preventDefault();
     if (!title || !departmentId || !startDate || !endDate) {
       setMessage({ type: 'error', text: 'กรุณากรอกข้อมูลที่มีเครื่องหมาย * ให้ครบถ้วน' });
+      return;
+    }
+
+    if (new Date(endDate) < new Date(startDate)) {
+      setMessage({ type: 'error', text: 'วันที่สิ้นสุดต้องไม่อยู่ก่อนวันที่เริ่มกิจกรรม' });
       return;
     }
 
@@ -64,14 +69,12 @@ export default function ActivitiesClient({ initialActivities, departments, sessi
 
       const newActivity = await res.json();
       
-      // อัปเดตรายการกิจกรรมบนหน้าจอทันที ไม่ต้องรีเฟรช
       const selectedDept = departments.find(d => d.id === newActivity.departmentId);
       const activityForUI = { ...newActivity, department: selectedDept };
       
       setActivities(prev => [activityForUI, ...prev]);
-      setMessage({ type: 'success', text: '✅ สร้างกิจกรรมสำเร็จ!' });
+      setMessage({ type: 'success', text: 'สร้างกิจกรรมสำเร็จ!' });
       
-      // ล้างฟอร์ม
       setTitle('');
       setDescription('');
       setDepartmentId('');
@@ -79,14 +82,13 @@ export default function ActivitiesClient({ initialActivities, departments, sessi
       setEndDate('');
       setBudgetRequested('');
       
-      // ปิดฟอร์มหลังจากสำเร็จ 1.5 วินาที
       setTimeout(() => {
         setShowCreateForm(false);
         setMessage(null);
       }, 1500);
 
     } catch (err) {
-      setMessage({ type: 'error', text: `❌ ${err.message}` });
+      setMessage({ type: 'error', text: `${err.message}` });
     } finally {
       setIsSubmitting(false);
     }
@@ -101,14 +103,9 @@ export default function ActivitiesClient({ initialActivities, departments, sessi
         </div>
         
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-end' }}>
-          {/* 
-            เอาปุ่มจำลองสิทธิ์ (Mock Role Selector) ออก 
-            และใช้สิทธิ์จาก Session ของผู้ใช้แทน
-          */}
-
           <div style={{ position: 'relative' }}>
             <button 
-              className="btn btn-primary"
+              className="btn btn-primary flex items-center gap-xs"
               onClick={() => canCreateActivity && setShowCreateForm(!showCreateForm)}
               style={{ 
                 opacity: canCreateActivity ? 1 : 0.5, 
@@ -117,7 +114,8 @@ export default function ActivitiesClient({ initialActivities, departments, sessi
               }}
               title={!canCreateActivity ? 'เฉพาะระดับประธานฝ่ายขึ้นไปเท่านั้น' : ''}
             >
-              {showCreateForm ? '❌ ปิดฟอร์ม' : '➕ สร้างกิจกรรมใหม่'}
+              {showCreateForm ? <X size={16} /> : <Plus size={16} />}
+              <span>{showCreateForm ? 'ปิดฟอร์ม' : 'สร้างกิจกรรมใหม่'}</span>
             </button>
             {!canCreateActivity && (
               <div style={{ fontSize: '11px', color: 'var(--color-danger)', position: 'absolute', right: 0, top: '40px', width: 'max-content' }}>
@@ -128,11 +126,12 @@ export default function ActivitiesClient({ initialActivities, departments, sessi
         </div>
       </div>
 
-      {/* --- Activity Creation Form --- */}
       {showCreateForm && canCreateActivity && (
-        <form onSubmit={handleSubmit} className="card mb-lg animate-fade-in" style={{ borderTop: '4px solid var(--blue-500)', boxShadow: 'var(--shadow-md)' }}>
+        <form onSubmit={handleSubmit} className="card mb-lg animate-fade-in hover-glow" style={{ borderTop: '4px solid var(--blue-500)', boxShadow: 'var(--shadow-md)' }}>
           <div className="flex items-center gap-sm mb-md">
-            <div style={{ background: 'var(--color-info-bg)', color: 'var(--blue-600)', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>📝</div>
+            <div style={{ background: 'var(--color-info-bg)', color: 'var(--blue-600)', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <FilePlus size={18} />
+            </div>
             <h3 style={{ margin: 0 }}>แบบฟอร์มเสนอจัดกิจกรรมใหม่</h3>
           </div>
 
@@ -149,11 +148,11 @@ export default function ActivitiesClient({ initialActivities, departments, sessi
           <div className="grid-2 mb-md">
             <div className="input-group">
               <label className="input-label">ชื่อกิจกรรม <span style={{ color: 'var(--color-danger)' }}>*</span></label>
-              <input type="text" className="input" placeholder="เช่น ค่ายรับน้อง..." value={title} onChange={e => setTitle(e.target.value)} />
+              <input type="text" className="input" placeholder="เช่น ค่ายรับน้อง..." value={title} onChange={e => setTitle(e.target.value)} required />
             </div>
             <div className="input-group">
               <label className="input-label">ฝ่ายที่รับผิดชอบ <span style={{ color: 'var(--color-danger)' }}>*</span></label>
-              <select className="select" value={departmentId} onChange={e => setDepartmentId(e.target.value)}>
+              <select className="select" value={departmentId} onChange={e => setDepartmentId(e.target.value)} required>
                 <option value="">-- โปรดเลือกฝ่าย --</option>
                 {departments.map(d => (
                   <option key={d.id} value={d.id}>{d.name}</option>
@@ -165,11 +164,11 @@ export default function ActivitiesClient({ initialActivities, departments, sessi
           <div className="grid-2 mb-md">
             <div className="input-group">
               <label className="input-label">วันที่เริ่ม <span style={{ color: 'var(--color-danger)' }}>*</span></label>
-              <input type="date" className="input" value={startDate} onChange={e => setStartDate(e.target.value)} />
+              <input type="date" className="input" value={startDate} onChange={e => setStartDate(e.target.value)} required />
             </div>
             <div className="input-group">
               <label className="input-label">วันที่สิ้นสุด <span style={{ color: 'var(--color-danger)' }}>*</span></label>
-              <input type="date" className="input" value={endDate} onChange={e => setEndDate(e.target.value)} />
+              <input type="date" className="input" min={startDate || undefined} value={endDate} onChange={e => setEndDate(e.target.value)} required />
             </div>
           </div>
 
@@ -180,20 +179,20 @@ export default function ActivitiesClient({ initialActivities, departments, sessi
 
           <div className="input-group mb-lg">
             <label className="input-label">งบประมาณที่ขออนุมัติเบื้องต้น (บาท)</label>
-            <input type="number" className="input" placeholder="เช่น 5000" value={budgetRequested} onChange={e => setBudgetRequested(e.target.value)} />
+            <input type="number" className="input" min="0" step="0.01" placeholder="เช่น 5000" value={budgetRequested} onChange={e => setBudgetRequested(e.target.value)} />
           </div>
 
           <div className="flex justify-end gap-sm">
             <button type="button" className="btn btn-secondary" onClick={() => setShowCreateForm(false)}>ยกเลิก</button>
-            <button type="submit" className="btn btn-primary" disabled={isSubmitting} style={{ opacity: isSubmitting ? 0.6 : 1 }}>
-              {isSubmitting ? '⏳ กำลังบันทึก...' : 'บันทึกและส่งร่างกิจกรรม'}
+            <button type="submit" className="btn btn-primary flex items-center gap-xs" disabled={isSubmitting} style={{ opacity: isSubmitting ? 0.6 : 1 }}>
+              {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <FilePlus size={16} />}
+              <span>{isSubmitting ? 'กำลังบันทึก...' : 'บันทึกและส่งร่างกิจกรรม'}</span>
             </button>
           </div>
         </form>
       )}
 
-      {/* --- Filter & List --- */}
-      <div className="card mb-lg">
+      <div className="card mb-lg hover-glow">
         <div className="flex items-center gap-md">
           <select 
             className="select flex-1"
@@ -229,7 +228,9 @@ export default function ActivitiesClient({ initialActivities, departments, sessi
       
       {filteredActivities.length === 0 && (
         <div className="empty-state">
-          <div className="empty-state-icon">📋</div>
+          <div className="empty-state-icon" style={{ display: 'flex', justifyContent: 'center', marginBottom: '12px' }}>
+            <ClipboardList size={48} style={{ color: 'var(--text-tertiary)' }} />
+          </div>
           <h3>ไม่พบกิจกรรม</h3>
           <p>ลองเปลี่ยนตัวกรองเพื่อค้นหาอีกครั้ง</p>
         </div>

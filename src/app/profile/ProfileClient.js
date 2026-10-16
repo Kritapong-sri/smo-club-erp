@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Save, KeyRound, Lock, Camera, Loader2, User } from 'lucide-react';
 
 export default function ProfileClient({ user }) {
   const router = useRouter();
@@ -22,6 +23,11 @@ export default function ProfileClient({ user }) {
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isChangingPass, setIsChangingPass] = useState(false);
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -35,13 +41,10 @@ export default function ProfileClient({ user }) {
     
     const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
     const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
-
-    // Use Imgur API as a free fallback if Cloudinary is not properly configured
     const useCloudinary = cloudName && cloudName !== "demo" && uploadPreset;
 
     try {
       if (useCloudinary) {
-        // --- CLOUDINARY UPLOAD ---
         const data = new FormData();
         data.append('file', file);
         data.append('upload_preset', uploadPreset);
@@ -58,11 +61,9 @@ export default function ProfileClient({ user }) {
 
         const result = await res.json();
         setAvatarUrl(result.secure_url);
-
       } else {
-        // --- IMGUR FALLBACK UPLOAD via Next.js Proxy (Fix CORS) ---
         const data = new FormData();
-        data.append('file', file); // API expects 'file'
+        data.append('file', file);
 
         const res = await fetch('/api/upload', {
           method: 'POST',
@@ -100,126 +101,327 @@ export default function ProfileClient({ user }) {
       });
 
       if (!res.ok) {
-        throw new Error(await res.text());
+        throw new Error('บันทึกข้อมูลไม่สำเร็จ');
       }
 
-      alert('บันทึกข้อมูลเรียบร้อยแล้ว!');
+      alert('บันทึกข้อมูลส่วนตัวเรียบร้อยแล้ว');
       router.refresh();
     } catch (err) {
-      alert('Error: ' + err.message);
+      alert(err.message);
     } finally {
       setIsSaving(false);
     }
   };
 
+  const handlePasswordChangeSubmit = async (e) => {
+    e.preventDefault();
+    if (newPassword !== confirmPassword) {
+      alert('รหัสผ่านใหม่และการยืนยันรหัสผ่านไม่ตรงกัน');
+      return;
+    }
+    if (newPassword.length < 4) {
+      alert('รหัสผ่านใหม่ต้องมีความยาวอย่างน้อย 4 ตัวอักษร');
+      return;
+    }
+
+    setIsChangingPass(true);
+
+    try {
+      const res = await fetch('/api/profile/password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          currentPassword,
+          newPassword
+        })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'เปลี่ยนรหัสผ่านไม่สำเร็จ');
+      }
+
+      alert('เปลี่ยนรหัสผ่านเรียบร้อยแล้ว!');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setIsChangingPass(false);
+    }
+  };
+
+  const fullName = `${user.prefix || ''}${user.firstNameTh || ''} ${user.lastNameTh || ''}`.trim();
+
   return (
-    <div className="page-container animate-fade-in">
-      <div className="page-header">
-        <h1>โปรไฟล์ของฉัน (My Profile)</h1>
-        <p>คุณสามารถแก้ไขข้อมูลส่วนตัวและการติดต่อได้ที่นี่</p>
+    <div className="page-container animate-fade-in" style={{ maxWidth: '900px' }}>
+      <div className="page-header mb-lg">
+        <h1>โปรไฟล์ส่วนตัว (My Profile)</h1>
+        <p>จัดการและแก้ไขข้อมูลส่วนตัวสำหรับสมาชิกสโมสรนิสิต</p>
       </div>
 
-      <div className="card mb-lg" style={{ maxWidth: '800px', margin: '0 auto' }}>
+      <div className="card mb-lg hover-glow">
         <form onSubmit={handleSubmit}>
-          
-          {/* Avatar Section */}
-          <div className="flex flex-col items-center mb-xl">
-            <div style={{
-              width: '120px', height: '120px', borderRadius: 'var(--radius-full)',
-              background: avatarUrl ? `url(${avatarUrl}) center/cover` : 'var(--gradient-primary)', 
-              color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: '48px', fontWeight: 'bold', marginBottom: 'var(--space-md)',
-              boxShadow: 'var(--shadow-glow)'
-            }}>
-              {!avatarUrl && (user.nickname?.[0] || user.firstNameTh?.[0] || '?')}
-            </div>
-            
-            <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer' }}>
-              {isUploading ? 'กำลังอัปโหลด...' : '📷 เปลี่ยนรูปโปรไฟล์'}
+          <div className="flex items-center gap-lg mb-lg pb-lg" style={{ borderBottom: '1px solid var(--border-primary)' }}>
+            <div style={{ position: 'relative' }}>
+              <div style={{
+                width: '96px',
+                height: '96px',
+                borderRadius: '50%',
+                background: 'var(--gradient-primary)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '32px',
+                fontWeight: 'bold',
+                color: 'white',
+                overflow: 'hidden',
+                boxShadow: 'var(--shadow-md)'
+              }}>
+                {avatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={avatarUrl} alt={fullName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  user.nickname ? user.nickname[0] : (user.firstNameTh ? user.firstNameTh[0] : <User size={40} />)
+                )}
+              </div>
+              <label 
+                htmlFor="avatar-input" 
+                className="hover-scale"
+                style={{
+                  position: 'absolute',
+                  bottom: 0,
+                  right: 0,
+                  background: 'var(--blue-600)',
+                  color: 'white',
+                  borderRadius: '50%',
+                  width: '32px',
+                  height: '32px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
+                }}
+                title="เปลี่ยนรูปโปรไฟล์"
+              >
+                {isUploading ? <Loader2 size={16} className="animate-spin" /> : <Camera size={16} />}
+              </label>
               <input 
+                id="avatar-input" 
                 type="file" 
                 accept="image/*" 
                 onChange={handleAvatarUpload} 
                 style={{ display: 'none' }} 
                 disabled={isUploading}
               />
-            </label>
-            <div className="text-secondary mt-xs" style={{ fontSize: '12px' }}>รองรับ JPG, PNG (ขนาดไม่เกิน 5MB)</div>
+            </div>
+
+            <div>
+              <h2 style={{ fontSize: '20px', marginBottom: '4px' }}>{fullName || user.studentId}</h2>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <span className="status-badge approved" style={{ textTransform: 'capitalize' }}>
+                  {user.role === 'admin' ? 'ผู้ดูแลระบบ (Admin)' : user.role === 'board' ? 'กรรมการสโมสร' : 'สมาชิก (Member)'}
+                </span>
+                {user.positionTitle && (
+                  <span style={{ fontSize: '13px', color: 'var(--blue-600)', fontWeight: 600 }}>
+                    {user.positionTitle}
+                  </span>
+                )}
+              </div>
+              <p style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginTop: '4px' }}>
+                รหัสนิสิต: {user.studentId} {user.department?.name && `• ฝ่าย${user.department.name}`}
+              </p>
+            </div>
           </div>
 
-          {/* Form Fields */}
-          <div className="grid-2 gap-md mb-lg">
+          <div className="grid-2 mb-md">
             <div className="input-group">
-              <label className="input-label">ชื่อเล่น</label>
-              <input type="text" name="nickname" className="input" value={formData.nickname} onChange={handleInputChange} />
+              <label className="input-label">ชื่อเล่น (Nickname)</label>
+              <input 
+                type="text" 
+                className="input" 
+                name="nickname" 
+                value={formData.nickname} 
+                onChange={handleInputChange} 
+                placeholder="เช่น โอม"
+              />
             </div>
             <div className="input-group">
-              <label className="input-label">เบอร์โทรศัพท์</label>
-              <input type="tel" name="phone" className="input" value={formData.phone} onChange={handleInputChange} />
+              <label className="input-label">เบอร์โทรศัพท์ (Phone)</label>
+              <input 
+                type="text" 
+                className="input font-en" 
+                name="phone" 
+                value={formData.phone} 
+                onChange={handleInputChange} 
+                placeholder="เช่น 081-234-5678"
+              />
             </div>
+          </div>
+
+          <div className="grid-2 mb-md">
             <div className="input-group">
               <label className="input-label">Line ID</label>
-              <input type="text" name="lineId" className="input" value={formData.lineId} onChange={handleInputChange} />
+              <input 
+                type="text" 
+                className="input font-en" 
+                name="lineId" 
+                value={formData.lineId} 
+                onChange={handleInputChange} 
+                placeholder="Line ID"
+              />
             </div>
             <div className="input-group">
-              <label className="input-label">Instagram</label>
-              <input type="text" name="instagram" className="input" value={formData.instagram} onChange={handleInputChange} />
-            </div>
-            <div className="input-group" style={{ gridColumn: '1 / -1' }}>
-              <label className="input-label">ที่อยู่ปัจจุบัน</label>
-              <textarea name="address" className="textarea" value={formData.address} onChange={handleInputChange} rows={2}></textarea>
+              <label className="input-label">Instagram (@username)</label>
+              <input 
+                type="text" 
+                className="input font-en" 
+                name="instagram" 
+                value={formData.instagram} 
+                onChange={handleInputChange} 
+                placeholder="เช่น @smo_cbs"
+              />
             </div>
           </div>
 
-          <hr className="mb-lg" style={{ borderColor: 'var(--border-primary)' }} />
-          
-          <h3 className="mb-md">ข้อมูลเพิ่มเติม / สุขภาพ</h3>
-          <div className="grid-2 gap-md mb-xl">
+          <div className="input-group mb-md">
+            <label className="input-label">ที่อยู่ปัจจุบัน (Address)</label>
+            <textarea 
+              className="input" 
+              name="address" 
+              rows="2" 
+              value={formData.address} 
+              onChange={handleInputChange} 
+              placeholder="ที่อยู่สำหรับจัดส่งเอกสารหรือติดต่อ"
+            />
+          </div>
+
+          <div className="grid-3 mb-md">
             <div className="input-group">
-              <label className="input-label">ไซส์เสื้อ</label>
-              <select name="shirtSize" className="select" value={formData.shirtSize} onChange={handleInputChange}>
-                <option value="">- เลือกไซส์ -</option>
-                <option value="S">S</option>
-                <option value="M">M</option>
-                <option value="L">L</option>
-                <option value="XL">XL</option>
-                <option value="2XL">2XL</option>
-              </select>
+              <label className="input-label">ไซส์เสื้อ (Shirt Size)</label>
+              <input 
+                type="text" 
+                className="input font-en" 
+                name="shirtSize" 
+                value={formData.shirtSize} 
+                onChange={handleInputChange} 
+                placeholder="เช่น M, L, XL"
+              />
             </div>
             <div className="input-group">
-              <label className="input-label">กรุ๊ปเลือด</label>
-              <select name="bloodGroup" className="select" value={formData.bloodGroup} onChange={handleInputChange}>
-                <option value="">- เลือกกรุ๊ปเลือด -</option>
-                <option value="A">A</option>
-                <option value="B">B</option>
-                <option value="O">O</option>
-                <option value="AB">AB</option>
-              </select>
-            </div>
-            <div className="input-group">
-              <label className="input-label">สิ่งที่แพ้ (อาหาร, ยา ฯลฯ)</label>
-              <input type="text" name="allergies" className="input" value={formData.allergies} onChange={handleInputChange} placeholder="ไม่มี ให้เว้นว่าง" />
-            </div>
-            <div className="input-group">
-              <label className="input-label">โรคประจำตัว</label>
-              <input type="text" name="medicalCondition" className="input" value={formData.medicalCondition} onChange={handleInputChange} placeholder="ไม่มี ให้เว้นว่าง" />
+              <label className="input-label">กรุ๊ปเลือด (Blood Group)</label>
+              <input 
+                type="text" 
+                className="input font-en" 
+                name="bloodGroup" 
+                value={formData.bloodGroup} 
+                onChange={handleInputChange} 
+                placeholder="เช่น O, A, B, AB"
+              />
             </div>
             <div className="input-group">
               <label className="input-label">MBTI</label>
-              <input type="text" name="mbti" className="input" value={formData.mbti} onChange={handleInputChange} placeholder="เช่น ENFP" />
+              <input 
+                type="text" 
+                className="input font-en" 
+                name="mbti" 
+                value={formData.mbti} 
+                onChange={handleInputChange} 
+                placeholder="เช่น ENFP, INTJ"
+              />
+            </div>
+          </div>
+
+          <div className="grid-2 mb-lg">
+            <div className="input-group">
+              <label className="input-label">สิ่งที่แพ้ (Allergies)</label>
+              <input 
+                type="text" 
+                className="input" 
+                name="allergies" 
+                value={formData.allergies} 
+                onChange={handleInputChange} 
+                placeholder="เช่น แพ้กุ้ง, แพ้ยาแก้ปวด"
+              />
             </div>
             <div className="input-group">
-              <label className="input-label">E-Color</label>
-              <input type="text" name="eColor" className="input" value={formData.eColor} onChange={handleInputChange} placeholder="สีประจำตัว" />
+              <label className="input-label">โรคประจำตัว (Medical Condition)</label>
+              <input 
+                type="text" 
+                className="input" 
+                name="medicalCondition" 
+                value={formData.medicalCondition} 
+                onChange={handleInputChange} 
+                placeholder="เช่น หอบหืด"
+              />
             </div>
           </div>
 
-          <div className="flex justify-end">
-            <button type="submit" className="btn btn-primary" disabled={isSaving || isUploading} style={{ minWidth: '150px' }}>
-              {isSaving ? 'กำลังบันทึก...' : '💾 บันทึกการเปลี่ยนแปลง'}
+          <div className="flex justify-end pt-md" style={{ borderTop: '1px solid var(--border-primary)' }}>
+            <button type="submit" className="btn btn-primary flex items-center gap-xs" disabled={isSaving}>
+              {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+              <span>{isSaving ? 'กำลังบันทึก...' : 'บันทึกการเปลี่ยนแปลง'}</span>
             </button>
           </div>
+        </form>
+      </div>
 
+      <div className="card hover-glow">
+        <h3 className="mb-md flex items-center gap-xs">
+          <KeyRound size={20} style={{ color: 'var(--blue-600)' }} />
+          <span>เปลี่ยนรหัสผ่านส่วนตัว (Change Password)</span>
+        </h3>
+        <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
+          ตั้งรหัสผ่านใหม่ของคุณเองเพื่อความปลอดภัยในการเข้าใช้งาน
+        </p>
+
+        <form onSubmit={handlePasswordChangeSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div className="input-group">
+            <label className="input-label">รหัสผ่านปัจจุบัน (Current Password)</label>
+            <input 
+              type="password" 
+              className="input font-en" 
+              value={currentPassword} 
+              onChange={e => setCurrentPassword(e.target.value)} 
+              placeholder="กรอกรหัสผ่านปัจจุบัน (ถ้ายังไม่เคยเปลี่ยน คือ รหัสนิสิต)"
+              required 
+            />
+          </div>
+
+          <div className="grid-2 gap-md">
+            <div className="input-group">
+              <label className="input-label">รหัสผ่านใหม่ (New Password)</label>
+              <input 
+                type="password" 
+                className="input font-en" 
+                value={newPassword} 
+                onChange={e => setNewPassword(e.target.value)} 
+                placeholder="รหัสผ่านใหม่ อย่างน้อย 4 ตัวอักษร"
+                required 
+              />
+            </div>
+            <div className="input-group">
+              <label className="input-label">ยืนยันรหัสผ่านใหม่ (Confirm Password)</label>
+              <input 
+                type="password" 
+                className="input font-en" 
+                value={confirmPassword} 
+                onChange={e => setConfirmPassword(e.target.value)} 
+                placeholder="พิมพ์รหัสผ่านใหม่อีกครั้ง"
+                required 
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end mt-sm">
+            <button type="submit" className="btn btn-secondary flex items-center gap-xs" disabled={isChangingPass} style={{ fontWeight: '700' }}>
+              {isChangingPass ? <Loader2 size={16} className="animate-spin" /> : <Lock size={16} />}
+              <span>{isChangingPass ? 'กำลังเปลี่ยน...' : 'เปลี่ยนรหัสผ่าน'}</span>
+            </button>
+          </div>
         </form>
       </div>
     </div>

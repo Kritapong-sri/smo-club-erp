@@ -1,20 +1,28 @@
 import { SignJWT, jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
 
-const secretKey = 'smo-club-erp-super-secret-key';
-const key = new TextEncoder().encode(secretKey);
+function getSessionKey() {
+  const secret = process.env.SESSION_SECRET;
+  if (secret) return new TextEncoder().encode(secret);
+
+  if (process.env.NODE_ENV !== 'production') {
+    return new TextEncoder().encode('local-development-only-session-secret');
+  }
+
+  throw new Error('SESSION_SECRET is required in production');
+}
 
 export async function encrypt(payload) {
   return await new SignJWT(payload)
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime('7d') // 7 days expiration
-    .sign(key);
+    .sign(getSessionKey());
 }
 
 export async function decrypt(input) {
   try {
-    const { payload } = await jwtVerify(input, key, {
+    const { payload } = await jwtVerify(input, getSessionKey(), {
       algorithms: ['HS256'],
     });
     return payload;
@@ -41,7 +49,7 @@ export async function createSession(user) {
   const cookieStore = await cookies();
   cookieStore.set('session', session, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production' && process.env.VERCEL_URL ? true : false,
+    secure: process.env.NODE_ENV === 'production',
     expires: expires,
     sameSite: 'lax',
     path: '/',

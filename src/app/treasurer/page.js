@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma';
 import Link from 'next/link';
 import { getSession } from '@/lib/session';
 import TreasurerClient from '@/components/TreasurerClient';
+import { ShieldAlert } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,9 +18,9 @@ export default async function TreasurerPage() {
   if (!isTreasurer) {
     return (
       <div className="page-container animate-fade-in" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', textAlign: 'center' }}>
-        <div style={{ fontSize: '64px', marginBottom: '16px' }}>🔒</div>
+        <ShieldAlert size={64} style={{ color: 'var(--color-danger)', marginBottom: '16px' }} />
         <h1 style={{ color: 'var(--color-danger)', marginBottom: '8px' }}>ไม่มีสิทธิ์เข้าถึง (Access Denied)</h1>
-        <p style={{ color: 'var(--text-secondary)', marginBottom: '24px' }}>หน้านี้สงวนสิทธิ์เฉพาะผู้ที่มีตำแหน่ง <b>"เหรัญญิก"</b> เท่านั้น</p>
+        <p style={{ color: 'var(--text-secondary)', marginBottom: '24px' }}>หน้านี้สงวนสิทธิ์เฉพาะผู้ที่มีตำแหน่ง <b>“เหรัญญิก”</b> เท่านั้น</p>
         <Link href="/" className="btn btn-primary">กลับสู่หน้าหลัก</Link>
       </div>
     );
@@ -44,4 +45,3 @@ export default async function TreasurerPage() {
     />
   );
 }
-
