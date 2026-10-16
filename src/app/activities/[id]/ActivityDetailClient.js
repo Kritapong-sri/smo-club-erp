@@ -27,7 +27,15 @@ import {
   Trash2,
   PenTool,
   ShieldCheck,
-  Award
+  Award,
+  Clock,
+  Calendar,
+  Building2,
+  User,
+  ExternalLink,
+  Coins,
+  Check,
+  Sparkles
 } from 'lucide-react';
 
 export default function ActivityDetailClient({ initialActivity, session }) {
@@ -615,46 +623,85 @@ export default function ActivityDetailClient({ initialActivity, session }) {
       {activeTab === 'details' ? (
         <div className="grid-3 stagger-children">
         <div className="col-span-2 flex-col gap-lg">
-          <div className="card hover-glow">
-            <h3 className="mb-md">รายละเอียดกิจกรรม</h3>
-            <div className="grid-2 gap-md">
-              <div>
-                <div className="text-tertiary text-sm mb-xs">ฝ่ายที่จัด</div>
+          {/* รายละเอียดกิจกรรม */}
+          <div className="card hover-glow" style={{ border: '1px solid var(--border-secondary)' }}>
+            <div className="flex items-center justify-between mb-md">
+              <div className="flex items-center gap-xs">
+                <FileText size={18} style={{ color: 'var(--blue-600)' }} />
+                <h3 style={{ margin: 0, fontSize: '15.5px', fontWeight: 700 }}>รายละเอียดกิจกรรม</h3>
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px', marginBottom: activity.description ? '16px' : '0' }}>
+              {/* ฝ่ายที่จัด */}
+              <div style={{ padding: '12px 14px', background: 'var(--bg-surface-hover)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-secondary)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-tertiary)', marginBottom: '6px' }}>
+                  <Building2 size={14} /> ฝ่ายที่รับผิดชอบ
+                </div>
                 {dept ? (
-                  <span className="dept-tag" style={{ color: dept.color, borderColor: dept.color }}>
+                  <span className="dept-tag" style={{ color: dept.color, borderColor: dept.color, background: `${dept.color}15`, fontWeight: 600 }}>
                     {dept.name}
                   </span>
-                ) : '-'}
+                ) : (
+                  <span style={{ color: 'var(--text-tertiary)', fontSize: '13px' }}>-</span>
+                )}
               </div>
-              <div>
-                <div className="text-tertiary text-sm mb-xs">ผู้รับผิดชอบ</div>
+
+              {/* ผู้รับผิดชอบ */}
+              <div style={{ padding: '12px 14px', background: 'var(--bg-surface-hover)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-secondary)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-tertiary)', marginBottom: '6px' }}>
+                  <User size={14} /> ผู้รับผิดชอบโครงการ
+                </div>
                 {creator ? (
-                  <div className="flex items-center gap-sm">
-                    <div className="avatar avatar-sm" style={{ background: 'var(--gradient-primary)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div className="avatar avatar-sm" style={{ background: 'var(--gradient-primary)', width: '28px', height: '28px', fontSize: '12px', flexShrink: 0 }}>
                       {creator.nickname?.[0] || creator.firstNameTh?.[0] || '?'}
                     </div>
-                    <span className="font-medium">{creator.firstNameTh} {creator.lastNameTh} ({creator.nickname})</span>
+                    <span style={{ fontWeight: 600, fontSize: '13px', color: 'var(--text-primary)' }}>
+                      {creator.firstNameTh} {creator.lastNameTh} {creator.nickname ? `(${creator.nickname})` : ''}
+                    </span>
                   </div>
-                ) : '-'}
+                ) : (
+                  <span style={{ color: 'var(--text-tertiary)', fontSize: '13px' }}>-</span>
+                )}
               </div>
-              <div>
-                <div className="text-tertiary text-sm mb-xs">วันที่เริ่มกิจกรรม</div>
-                <div className="font-en font-medium">
-                  {activity.startDate ? new Date(activity.startDate).toLocaleDateString('th-TH', { dateStyle: 'long' }) : '-'}
+
+              {/* วันที่เริ่ม */}
+              <div style={{ padding: '12px 14px', background: 'var(--bg-surface-hover)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-secondary)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-tertiary)', marginBottom: '6px' }}>
+                  <Calendar size={14} /> วันที่เริ่มกิจกรรม
+                </div>
+                <div style={{ fontWeight: 600, fontSize: '13px', color: 'var(--text-primary)' }}>
+                  {activity.startDate ? new Date(activity.startDate).toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric' }) : '-'}
                 </div>
               </div>
-              <div>
-                <div className="text-tertiary text-sm mb-xs">วันที่สิ้นสุดกิจกรรม</div>
-                <div className="font-en font-medium">
-                  {activity.endDate ? new Date(activity.endDate).toLocaleDateString('th-TH', { dateStyle: 'long' }) : '-'}
+
+              {/* วันที่สิ้นสุด */}
+              <div style={{ padding: '12px 14px', background: 'var(--bg-surface-hover)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-secondary)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-tertiary)', marginBottom: '6px' }}>
+                  <Calendar size={14} /> วันที่สิ้นสุดกิจกรรม
+                </div>
+                <div style={{ fontWeight: 600, fontSize: '13px', color: 'var(--text-primary)' }}>
+                  {activity.endDate ? new Date(activity.endDate).toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric' }) : '-'}
                 </div>
               </div>
             </div>
+
+            {activity.description && (
+              <div style={{ padding: '12px 14px', background: 'var(--blue-50)', borderRadius: 'var(--radius-md)', borderLeft: '3px solid var(--blue-500)', fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--blue-700)', marginBottom: '2px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>คำอธิบายโครงการ</div>
+                {activity.description}
+              </div>
+            )}
           </div>
 
-          <div className="card hover-glow">
+          {/* เอกสารแนบ Google Drive */}
+          <div className="card hover-glow" style={{ border: '1px solid var(--border-secondary)' }}>
             <div className="flex items-center justify-between mb-md">
-              <h3>เอกสารแนบ (Documents)</h3>
+              <div className="flex items-center gap-xs">
+                <Folder size={18} style={{ color: 'var(--blue-600)' }} />
+                <h3 style={{ margin: 0, fontSize: '15.5px', fontWeight: 700 }}>เอกสารโครงการ & แนบไฟล์</h3>
+              </div>
               {canUpload && (
                 <button className="btn btn-primary btn-sm flex items-center gap-xs hover-scale" onClick={() => setShowUploadModal(true)}>
                   <UploadCloud size={15} /> แนบไฟล์ Google Drive
@@ -663,7 +710,7 @@ export default function ActivityDetailClient({ initialActivity, session }) {
             </div>
             
             {documents.length > 0 ? (
-              <div className="grid-2 gap-md">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {documents.map(doc => {
                   const uploader = doc.uploadedBy;
                   const isGDrive = doc.fileUrl && doc.fileUrl.includes('drive.google.com');
@@ -672,129 +719,164 @@ export default function ActivityDetailClient({ initialActivity, session }) {
                   return (
                     <div 
                       key={doc.id} 
-                      className="file-item hover-lift flex items-center justify-between" 
-                      style={{ cursor: 'pointer', position: 'relative' }} 
+                      className="file-item hover-lift" 
+                      style={{ 
+                        cursor: 'pointer',
+                        padding: '12px 16px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: '12px',
+                        borderRadius: 'var(--radius-md)',
+                        background: '#ffffff',
+                        border: '1px solid var(--border-secondary)'
+                      }} 
                       onClick={() => doc.fileUrl && window.open(doc.fileUrl, '_blank')}
                     >
-                      <div className="flex items-center gap-md" style={{ overflow: 'hidden', flex: 1 }}>
-                        <div className={`file-icon ${doc.fileType}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                          {isGDrive ? <HardDrive size={20} style={{ color: '#0284c7' }} /> : doc.fileType === 'pdf' ? <FileText size={20} /> : doc.fileType === 'xlsx' ? <BarChart3 size={20} /> : doc.fileType === 'link' ? <LinkIcon size={20} /> : <Folder size={20} />}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0, flex: 1 }}>
+                        <div className={`file-icon ${doc.fileType}`} style={{ width: '42px', height: '42px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          {isGDrive ? <HardDrive size={22} style={{ color: '#0284c7' }} /> : doc.fileType === 'pdf' ? <FileText size={22} /> : doc.fileType === 'xlsx' ? <BarChart3 size={22} /> : <Folder size={22} />}
                         </div>
-                        <div className="file-info" style={{ overflow: 'hidden' }}>
-                          <div className="file-name" style={{ color: 'var(--blue-600)', display: 'flex', alignItems: 'center', gap: '4px', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
-                            <span>{doc.fileName}</span>
-                            {isGDrive && <span style={{ fontSize: '10px', background: '#e0f2fe', color: '#0284c7', padding: '1px 6px', borderRadius: '4px', fontWeight: 700, flexShrink: 0 }}>Google Drive</span>}
+                        <div style={{ minWidth: 0, flex: 1 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
+                            <span style={{ fontWeight: 600, fontSize: '13.5px', color: 'var(--blue-700)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>
+                              {doc.fileName}
+                            </span>
+                            {isGDrive && (
+                              <span style={{ fontSize: '10px', background: '#e0f2fe', color: '#0284c7', padding: '1px 6px', borderRadius: '4px', fontWeight: 700, flexShrink: 0 }}>
+                                Google Drive
+                              </span>
+                            )}
                           </div>
-                          <div className="file-meta">
-                            {uploader?.nickname || uploader?.firstNameTh || 'อัปโหลดแล้ว'} • {new Date(doc.uploadedAt).toLocaleDateString('th-TH')}
+                          <div style={{ fontSize: '11.5px', color: 'var(--text-tertiary)' }}>
+                            อัปโหลดโดย {uploader?.nickname || uploader?.firstNameTh || 'นิสิต'} • {new Date(doc.uploadedAt).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' })}
                           </div>
                         </div>
                       </div>
 
-                      {canDeleteDoc && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
                         <button
                           type="button"
-                          className="btn-delete-doc hover-scale"
-                          title="ลบเอกสารโครงการนี้"
-                          onClick={(e) => handleDeleteDocument(doc.id, e)}
-                          style={{
-                            border: 'none',
-                            background: 'rgba(239, 68, 68, 0.1)',
-                            color: 'var(--color-danger, #ef4444)',
-                            cursor: 'pointer',
-                            padding: '6px 8px',
-                            borderRadius: '6px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            marginLeft: '8px',
-                            flexShrink: 0
-                          }}
+                          className="btn btn-ghost btn-sm px-xs hover-scale"
+                          title="เปิดดูเอกสาร"
+                          onClick={(e) => { e.stopPropagation(); window.open(doc.fileUrl, '_blank'); }}
+                          style={{ color: 'var(--blue-600)' }}
                         >
-                          <Trash2 size={16} />
+                          <ExternalLink size={16} />
                         </button>
-                      )}
+
+                        {canDeleteDoc && (
+                          <button
+                            type="button"
+                            className="btn btn-ghost btn-sm px-xs hover-scale"
+                            title="ลบเอกสารโครงการนี้"
+                            onClick={(e) => handleDeleteDocument(doc.id, e)}
+                            style={{ color: 'var(--color-danger)' }}
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
               </div>
             ) : (
-              <div className="empty-state py-md">
-                <div className="empty-state-icon" style={{ display: 'flex', justifyContent: 'center', marginBottom: '8px' }}>
-                  <Folder size={40} style={{ color: 'var(--text-tertiary)' }} />
+              <div className="empty-state py-md" style={{ border: '1.5px dashed var(--border-primary)', borderRadius: 'var(--radius-md)', padding: '24px', textAlign: 'center' }}>
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '8px' }}>
+                  <HardDrive size={36} style={{ color: 'var(--blue-400)' }} />
                 </div>
-                <p className="text-tertiary text-sm">ยังไม่มีเอกสารแนบใน Google Drive</p>
+                <div style={{ fontWeight: 600, fontSize: '13px', color: 'var(--text-secondary)' }}>ยังไม่มีเอกสารแนบใน Google Drive</div>
+                <p style={{ fontSize: '11.5px', color: 'var(--text-tertiary)', margin: '4px 0 12px' }}>สามารถอัปโหลดไฟล์ Proposal, ตาราง MP หรือเอกสารที่เกี่ยวข้องได้โดยตรง</p>
+                {canUpload && (
+                  <button className="btn btn-sm btn-outline hover-scale" onClick={() => setShowUploadModal(true)}>
+                    <UploadCloud size={14} /> อัปโหลดเอกสารแรก
+                  </button>
+                )}
               </div>
             )}
           </div>
 
           {/* ขั้นตอนการลงนามเอกสาร (Official Signatures) */}
           {['approved', 'completed'].includes(activity.status) && (
-            <div className="card hover-glow" style={{ borderLeft: '4px solid var(--blue-600)' }}>
-              <div className="flex items-center justify-between mb-md">
+            <div className="card hover-glow" style={{ border: '1px solid rgba(2, 132, 199, 0.25)', borderTop: '4px solid var(--blue-600)', background: 'linear-gradient(180deg, #ffffff 0%, #fbfdff 100%)' }}>
+              <div className="flex items-center justify-between flex-wrap gap-sm mb-md pb-xs" style={{ borderBottom: '1px solid var(--border-secondary)' }}>
                 <div className="flex items-center gap-sm">
-                  <PenTool size={18} style={{ color: 'var(--blue-600)' }} />
-                  <h3 style={{ margin: 0 }}>ขั้นตอนการลงนามเอกสาร (Official Signatures)</h3>
+                  <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(2, 132, 199, 0.1)', color: 'var(--blue-600)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <ShieldCheck size={20} />
+                  </div>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '15.5px', fontWeight: 700 }}>การลงนามรับรองโครงการอย่างเป็นทางการ</h3>
+                    <p style={{ margin: 0, fontSize: '11.5px', color: 'var(--text-tertiary)' }}>Official Digital Approval & Verification</p>
+                  </div>
                 </div>
                 {headSignature && presidentSignature ? (
-                  <span className="status-badge completed" style={{ fontSize: '11px', padding: '2px 8px' }}>
-                    ลงนามครบทุกขั้นตอน
+                  <span style={{ whiteSpace: 'nowrap', flexShrink: 0, padding: '4px 10px', borderRadius: '9999px', fontSize: '11.5px', fontWeight: 700, background: '#dcfce7', color: '#15803d', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                    <CheckCircle2 size={13} /> ลงนามครบถ้วนสมบูรณ์แล้ว
                   </span>
                 ) : (
-                  <span className="status-badge pending" style={{ fontSize: '11px', padding: '2px 8px' }}>
-                    กำลังอยู่ในขั้นตอนลงนาม
+                  <span style={{ whiteSpace: 'nowrap', flexShrink: 0, padding: '4px 10px', borderRadius: '9999px', fontSize: '11.5px', fontWeight: 700, background: '#fef3c7', color: '#b45309', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                    <Clock size={13} /> กำลังอยู่ในขั้นตอนลงนาม
                   </span>
                 )}
               </div>
 
-              <div className="grid-2 gap-md">
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
                 {/* 1. ประธานฝ่าย */}
                 <div style={{
-                  padding: '16px',
+                  padding: '16px 18px',
                   borderRadius: 'var(--radius-md)',
-                  background: headSignature ? 'rgba(16, 185, 129, 0.05)' : 'var(--bg-surface-hover)',
-                  border: `1px solid ${headSignature ? 'var(--color-success)' : 'var(--border-primary)'}`,
+                  background: headSignature ? 'linear-gradient(145deg, #f0fdf4 0%, #ffffff 100%)' : '#ffffff',
+                  border: `1.5px solid ${headSignature ? '#86efac' : 'var(--border-secondary)'}`,
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '10px'
+                  justifyContent: 'space-between',
+                  gap: '12px',
+                  boxShadow: headSignature ? '0 2px 10px rgba(34, 197, 94, 0.08)' : 'none'
                 }}>
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-sm flex items-center gap-xs">
-                      1. ประธานฝ่าย{activity.department?.name ? ` (${activity.department.name})` : ''}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' }}>
+                    <span style={{ fontWeight: 700, fontSize: '13.5px', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ width: '22px', height: '22px', borderRadius: '50%', background: headSignature ? '#15803d' : 'var(--blue-600)', color: 'white', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 700 }}>1</span>
+                      ประธานฝ่าย{dept?.name ? ` (${dept.name})` : ''}
                     </span>
                     {headSignature ? (
-                      <span style={{ fontSize: '11px', background: 'rgba(16, 185, 129, 0.15)', color: 'var(--color-success)', padding: '2px 8px', borderRadius: '4px', fontWeight: '700' }}>
-                        ✓ ลงนามแล้ว
+                      <span style={{ whiteSpace: 'nowrap', flexShrink: 0, padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 700, background: '#dcfce7', color: '#15803d', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                        <CheckCircle2 size={12} /> ลงนามรับรองแล้ว
                       </span>
                     ) : (
-                      <span style={{ fontSize: '11px', background: 'rgba(245, 158, 11, 0.15)', color: '#d97706', padding: '2px 8px', borderRadius: '4px', fontWeight: '700' }}>
-                        ⏳ รอประธานฝ่ายเซ็น
+                      <span style={{ whiteSpace: 'nowrap', flexShrink: 0, padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 700, background: '#fef3c7', color: '#b45309', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                        <Clock size={12} /> รอประธานฝ่ายเซ็น
                       </span>
                     )}
                   </div>
 
                   {headSignature ? (
-                    <div style={{ fontSize: '13px' }}>
-                      <div className="text-secondary mb-xs">
-                        <strong>ผู้ลงนาม:</strong> {headSignature.reviewer?.firstNameTh} {headSignature.reviewer?.lastNameTh} ({headSignature.reviewer?.positionTitle || 'ประธานฝ่าย'})
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', background: '#ffffff', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
+                      <div className="avatar avatar-sm" style={{ background: 'linear-gradient(135deg, #10b981, #059669)', color: 'white', fontWeight: '700', fontSize: '13px', flexShrink: 0 }}>
+                        {headSignature.reviewer?.nickname?.[0] || headSignature.reviewer?.firstNameTh?.[0] || 'ป'}
                       </div>
-                      <div className="text-tertiary text-xs">
-                        ลงนามเมื่อ: {new Date(headSignature.reviewedAt).toLocaleString('th-TH')}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontWeight: 600, fontSize: '13px', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {headSignature.reviewer?.firstNameTh} {headSignature.reviewer?.lastNameTh} {headSignature.reviewer?.nickname ? `(${headSignature.reviewer.nickname})` : ''}
+                        </div>
+                        <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                          {headSignature.reviewer?.positionTitle || 'ประธานฝ่าย'} • {new Date(headSignature.reviewedAt).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </div>
                       </div>
                     </div>
                   ) : (
                     <div>
-                      <p className="text-tertiary text-xs mb-sm">
-                        รอประธานฝ่าย{activity.department?.name || ''} ตรวจรับรองโครงการก่อนส่งให้นายกสโมสร
+                      <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '0 0 10px', lineHeight: 1.5 }}>
+                        รอประธานฝ่าย{dept?.name || ''} ตรวจสอบความถูกต้องและลงนามรับรองโครงการก่อนส่งให้นายกสโมสรนิสิต
                       </p>
                       {isDeptHeadUser && (
                         <button
                           type="button"
-                          className="btn btn-sm btn-primary w-full flex items-center justify-center gap-xs"
+                          className="btn btn-sm btn-primary w-full flex items-center justify-center gap-xs hover-scale"
                           onClick={() => handleSign('head')}
                           disabled={isSubmitting}
                         >
-                          <PenTool size={14} /> ลงนามรับรอง (ประธานฝ่าย)
+                          <PenTool size={14} /> ลงนามรับรองโครงการ (ประธานฝ่าย)
                         </button>
                       )}
                     </div>
@@ -803,44 +885,52 @@ export default function ActivityDetailClient({ initialActivity, session }) {
 
                 {/* 2. นายกสโมสรนิสิต */}
                 <div style={{
-                  padding: '16px',
+                  padding: '16px 18px',
                   borderRadius: 'var(--radius-md)',
-                  background: presidentSignature ? 'rgba(16, 185, 129, 0.05)' : 'var(--bg-surface-hover)',
-                  border: `1px solid ${presidentSignature ? 'var(--color-success)' : 'var(--border-primary)'}`,
+                  background: presidentSignature ? 'linear-gradient(145deg, #f0fdf4 0%, #ffffff 100%)' : '#ffffff',
+                  border: `1.5px solid ${presidentSignature ? '#86efac' : headSignature ? 'rgba(225, 29, 72, 0.3)' : 'var(--border-secondary)'}`,
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '10px'
+                  justifyContent: 'space-between',
+                  gap: '12px',
+                  boxShadow: presidentSignature ? '0 2px 10px rgba(34, 197, 94, 0.08)' : 'none'
                 }}>
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-sm flex items-center gap-xs">
-                      2. นายกสโมสรนิสิต (Final)
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' }}>
+                    <span style={{ fontWeight: 700, fontSize: '13.5px', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ width: '22px', height: '22px', borderRadius: '50%', background: presidentSignature ? '#15803d' : (headSignature ? '#e11d48' : '#94a3b8'), color: 'white', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 700 }}>2</span>
+                      นายกสโมสรนิสิต (Final)
                     </span>
                     {presidentSignature ? (
-                      <span style={{ fontSize: '11px', background: 'rgba(16, 185, 129, 0.15)', color: 'var(--color-success)', padding: '2px 8px', borderRadius: '4px', fontWeight: '700' }}>
-                        ✓ ลงนามอนุมัติสมบูรณ์
+                      <span style={{ whiteSpace: 'nowrap', flexShrink: 0, padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 700, background: '#dcfce7', color: '#15803d', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                        <CheckCircle2 size={12} /> ลงนามอนุมัติสมบูรณ์
                       </span>
                     ) : (
-                      <span style={{ fontSize: '11px', background: headSignature ? 'rgba(225, 29, 72, 0.15)' : 'var(--bg-surface)', color: headSignature ? '#e11d48' : 'var(--text-tertiary)', padding: '2px 8px', borderRadius: '4px', fontWeight: '700' }}>
-                        {headSignature ? '✍️ รอนายกสโมสรเซ็น' : '🔒 รอขั้นตอนที่ 1'}
+                      <span style={{ whiteSpace: 'nowrap', flexShrink: 0, padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 700, background: headSignature ? '#ffe4e6' : '#f1f5f9', color: headSignature ? '#e11d48' : '#64748b', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                        {headSignature ? <><PenTool size={12} /> รอนายกสโมสรเซ็น</> : '🔒 รอขั้นตอนที่ 1'}
                       </span>
                     )}
                   </div>
 
                   {presidentSignature ? (
-                    <div style={{ fontSize: '13px' }}>
-                      <div className="text-secondary mb-xs">
-                        <strong>ผู้ลงนาม:</strong> {presidentSignature.reviewer?.firstNameTh} {presidentSignature.reviewer?.lastNameTh} ({presidentSignature.reviewer?.positionTitle || 'นายกสโมสรนิสิต'})
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', background: '#ffffff', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
+                      <div className="avatar avatar-sm" style={{ background: 'linear-gradient(135deg, #e11d48, #be123c)', color: 'white', fontWeight: '700', fontSize: '13px', flexShrink: 0 }}>
+                        {presidentSignature.reviewer?.nickname?.[0] || presidentSignature.reviewer?.firstNameTh?.[0] || 'น'}
                       </div>
-                      <div className="text-tertiary text-xs">
-                        ลงนามเมื่อ: {new Date(presidentSignature.reviewedAt).toLocaleString('th-TH')}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontWeight: 600, fontSize: '13px', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {presidentSignature.reviewer?.firstNameTh} {presidentSignature.reviewer?.lastNameTh} {presidentSignature.reviewer?.nickname ? `(${presidentSignature.reviewer.nickname})` : ''}
+                        </div>
+                        <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                          {presidentSignature.reviewer?.positionTitle || 'นายกสโมสรนิสิต'} • {new Date(presidentSignature.reviewedAt).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </div>
                       </div>
                     </div>
                   ) : (
                     <div>
-                      <p className="text-tertiary text-xs mb-sm">
+                      <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '0 0 10px', lineHeight: 1.5 }}>
                         {headSignature
-                          ? 'ประธานฝ่ายลงนามแล้ว รอให้นายกสโมสรนิสิตลงนามอนุมัติขั้นสุดท้าย'
-                          : 'ต้องให้ประธานฝ่ายลงนามรับรองให้เรียบร้อยก่อน จึงจะสามารถลงนามอนุมัติได้'}
+                          ? 'ประธานฝ่ายลงนามรับรองแล้ว นายกสโมสรนิสิตสามารถลงนามอนุมัติโครงการขั้นสุดท้ายได้ทันที'
+                          : 'ต้องให้ประธานฝ่ายลงนามรับรองความถูกต้องของโครงการก่อน จึงจะเปิดให้นายกสโมสรนิสิตลงนามอนุมัติ'}
                       </p>
                       {isPresidentUser && (headSignature || isAdmin) && (
                         <button
@@ -848,9 +938,9 @@ export default function ActivityDetailClient({ initialActivity, session }) {
                           className="btn btn-sm w-full flex items-center justify-center gap-xs hover-scale"
                           onClick={() => handleSign('president')}
                           disabled={isSubmitting}
-                          style={{ background: 'linear-gradient(135deg, #e11d48 0%, #be123c 100%)', color: 'white', border: 'none' }}
+                          style={{ background: 'linear-gradient(135deg, #e11d48 0%, #be123c 100%)', color: 'white', border: 'none', fontWeight: 600 }}
                         >
-                          <PenTool size={14} /> ลงนามอนุมัติ (นายกสโมสรนิสิต)
+                          <PenTool size={14} /> ลงนามอนุมัติโครงการ (นายกสโมสรนิสิต)
                         </button>
                       )}
                     </div>
@@ -860,9 +950,13 @@ export default function ActivityDetailClient({ initialActivity, session }) {
             </div>
           )}
 
+          {/* ประวัติการตรวจเอกสาร / คำแนะนำ */}
           {reviews.length > 0 && (
-            <div className="card hover-glow">
-              <h3 className="mb-md">ประวัติการตรวจเอกสาร / คำแนะนำ</h3>
+            <div className="card hover-glow" style={{ border: '1px solid var(--border-secondary)' }}>
+              <div className="flex items-center gap-xs mb-md">
+                <ClipboardCheck size={18} style={{ color: 'var(--blue-600)' }} />
+                <h3 style={{ margin: 0, fontSize: '15.5px', fontWeight: 700 }}>ประวัติการตรวจเอกสาร & ข้อเสนอแนะ</h3>
+              </div>
               <div className="flex-col gap-md">
                 {reviews.map(rev => {
                   const urlRegex = /(https?:\/\/[^\s]+)/g;
@@ -888,21 +982,28 @@ export default function ActivityDetailClient({ initialActivity, session }) {
                     rev.status === 'approved' ? 'var(--color-success)' : 'var(--color-warning)';
 
                   return (
-                    <div key={rev.id} style={{ padding: '12px', background: 'var(--bg-surface-hover)', borderRadius: 'var(--radius-md)', borderLeft: `3px solid ${borderLeftColor}` }}>
+                    <div key={rev.id} style={{ padding: '14px 16px', background: 'var(--bg-surface-hover)', borderRadius: 'var(--radius-md)', borderLeft: `3.5px solid ${borderLeftColor}`, border: '1px solid var(--border-secondary)', borderLeftWidth: '3.5px' }}>
                       <div className="flex justify-between items-center mb-xs">
-                        <span className="font-semibold text-sm">{rev.reviewer?.positionTitle || rev.reviewer?.firstNameTh || 'ผู้ตรวจ'}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontWeight: 600, fontSize: '13.5px', color: 'var(--text-primary)' }}>
+                            {rev.reviewer?.firstNameTh} {rev.reviewer?.lastNameTh}
+                          </span>
+                          <span style={{ fontSize: '11px', color: 'var(--text-tertiary)', background: 'var(--bg-surface)', padding: '1px 6px', borderRadius: '4px', border: '1px solid var(--border-secondary)' }}>
+                            {rev.reviewer?.positionTitle || 'ผู้ตรวจ'}
+                          </span>
+                        </div>
                         <div className="flex items-center gap-xs">
                           <span className={`status-badge ${revBadgeClass}`} style={{ fontSize: '11px', padding: '2px 8px' }}>
                             {revBadgeLabel}
                           </span>
-                          <span className="text-xs text-tertiary">{new Date(rev.reviewedAt).toLocaleDateString('th-TH')}</span>
+                          <span style={{ fontSize: '11.5px', color: 'var(--text-tertiary)' }}>{new Date(rev.reviewedAt).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                         </div>
                       </div>
-                      <div className="text-sm" style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                      <div style={{ fontSize: '13px', lineHeight: 1.6, color: 'var(--text-secondary)', whiteSpace: 'pre-wrap', wordBreak: 'break-word', marginTop: '6px' }}>
                         {parts.map((part, idx) =>
                           urlRegex.test(part) ? (
-                            <a key={idx} href={part} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--blue-600)', textDecoration: 'underline', fontWeight: '500' }}>
-                              {part}
+                            <a key={idx} href={part} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--blue-600)', textDecoration: 'underline', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                              <ExternalLink size={12} /> {part}
                             </a>
                           ) : (
                             part
@@ -918,59 +1019,114 @@ export default function ActivityDetailClient({ initialActivity, session }) {
         </div>
 
         <div className="flex-col gap-lg">
-          <div className="card hover-glow">
-            <h3 className="mb-md">งบประมาณ</h3>
-            <div className="text-tertiary text-sm mb-xs">งบประมาณที่ขอ</div>
-            <div className="font-en text-2xl font-bold mb-md" style={{ color: 'var(--text-primary)' }}>
-              ฿{activity.budgetRequested?.toLocaleString() || 0}
+          {/* Card งบประมาณ */}
+          <div className="card hover-glow" style={{ border: '1px solid var(--border-secondary)' }}>
+            <div className="flex items-center justify-between mb-md">
+              <div className="flex items-center gap-xs">
+                <Coins size={18} style={{ color: 'var(--blue-600)' }} />
+                <h3 style={{ margin: 0, fontSize: '15.5px', fontWeight: 700 }}>งบประมาณโครงการ</h3>
+              </div>
+              {activity.budgetApproved != null && (
+                <span style={{ fontSize: '11px', background: '#dcfce7', color: '#15803d', padding: '2px 8px', borderRadius: '4px', fontWeight: 700 }}>
+                  ✓ อนุมัติงบแล้ว
+                </span>
+              )}
             </div>
 
-            {activity.budgetApproved != null && (
-              <>
-                <div className="text-tertiary text-sm mb-xs">งบประมาณที่อนุมัติ</div>
-                <div className="font-en text-2xl font-bold" style={{ color: 'var(--color-success)' }}>
-                  ฿{activity.budgetApproved.toLocaleString()}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ padding: '14px', background: 'var(--bg-surface-hover)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-secondary)' }}>
+                <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginBottom: '4px' }}>งบประมาณที่เสนอขอ</div>
+                <div className="font-en text-2xl font-bold" style={{ color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
+                  ฿{activity.budgetRequested?.toLocaleString() || 0}
                 </div>
-              </>
-            )}
+              </div>
+
+              {activity.budgetApproved != null && (
+                <div style={{ padding: '14px', background: 'rgba(16, 185, 129, 0.08)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(16, 185, 129, 0.25)' }}>
+                  <div style={{ fontSize: '12px', color: '#047857', fontWeight: 600, marginBottom: '4px' }}>งบประมาณที่ได้รับอนุมัติ</div>
+                  <div className="font-en text-2xl font-bold" style={{ color: 'var(--color-success)', letterSpacing: '-0.02em' }}>
+                    ฿{activity.budgetApproved.toLocaleString()}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
-          <div className="card hover-glow">
-            <h3 className="mb-md">สถานะ (Timeline)</h3>
+          {/* Card ไทม์ไลน์สถานะ */}
+          <div className="card hover-glow" style={{ border: '1px solid var(--border-secondary)' }}>
+            <div className="flex items-center justify-between mb-md">
+              <div className="flex items-center gap-xs">
+                <Clock size={18} style={{ color: 'var(--blue-600)' }} />
+                <h3 style={{ margin: 0, fontSize: '15.5px', fontWeight: 700 }}>ลำดับขั้นตอน (Timeline)</h3>
+              </div>
+              {activity.status === 'completed' && (
+                <span style={{ fontSize: '10.5px', background: '#dcfce7', color: '#15803d', padding: '1px 8px', borderRadius: '4px', fontWeight: 700 }}>
+                  เสร็จสิ้นสมบูรณ์
+                </span>
+              )}
+            </div>
+
             <div className="timeline">
-              <div className="timeline-item active">
-                <div className="timeline-marker"></div>
+              {/* 1. ร่างกิจกรรม */}
+              <div className="timeline-item completed">
+                <div className="timeline-dot">
+                  <Check size={14} strokeWidth={3} />
+                </div>
                 <div className="timeline-content">
-                  <div className="timeline-title">ร่างกิจกรรม</div>
-                  <div className="timeline-date">{new Date(activity.createdAt).toLocaleDateString('th-TH')}</div>
+                  <div className="timeline-title">1. ร่างกิจกรรม & เสนอโครงการ</div>
+                  <div className="timeline-date">{new Date(activity.createdAt).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
                 </div>
               </div>
-              <div className={`timeline-item ${['pending_treasurer', 'pending_executive', 'approved', 'completed'].includes(activity.status) ? 'active' : ''}`}>
-                <div className="timeline-marker"></div>
+
+              {/* 2. รอตรวจเอกสาร/งบ */}
+              <div className={`timeline-item ${['approved', 'completed'].includes(activity.status) ? 'completed' : (['pending_treasurer', 'pending_executive'].includes(activity.status) ? 'active' : 'pending')}`}>
+                <div className="timeline-dot">
+                  {['approved', 'completed'].includes(activity.status) ? <Check size={14} strokeWidth={3} /> : '2'}
+                </div>
                 <div className="timeline-content">
-                  <div className="timeline-title">รอตรวจเอกสาร/งบ</div>
-                  <div className="timeline-date">{['approved', 'completed'].includes(activity.status) ? 'ผ่านการตรวจแล้ว' : (['pending_treasurer', 'pending_executive'].includes(activity.status) ? 'กำลังตรวจ' : '-')}</div>
+                  <div className="timeline-title">2. ตรวจเอกสารและงบประมาณ</div>
+                  <div className="timeline-date">
+                    {['approved', 'completed'].includes(activity.status) ? 'ผ่านการตรวจโดยเหรัญญิก/บริหาร' : (['pending_treasurer', 'pending_executive'].includes(activity.status) ? 'กำลังอยู่ในขั้นตอนตรวจสอบ' : (activity.status === 'revision' ? 'ส่งกลับให้แก้ไข' : 'รอดำเนินการ'))}
+                  </div>
                 </div>
               </div>
-              <div className={`timeline-item ${['approved', 'completed'].includes(activity.status) ? 'active' : ''}`}>
-                <div className="timeline-marker"></div>
+
+              {/* 3. อนุมัติงบประมาณ */}
+              <div className={`timeline-item ${['approved', 'completed'].includes(activity.status) ? 'completed' : 'pending'}`}>
+                <div className="timeline-dot">
+                  {['approved', 'completed'].includes(activity.status) ? <Check size={14} strokeWidth={3} /> : '3'}
+                </div>
                 <div className="timeline-content">
-                  <div className="timeline-title">อนุมัติงบประมาณ</div>
-                  <div className="timeline-date">{['approved', 'completed'].includes(activity.status) ? 'อนุมัติแล้ว' : '-'}</div>
+                  <div className="timeline-title">3. อนุมัติงบประมาณ</div>
+                  <div className="timeline-date">
+                    {['approved', 'completed'].includes(activity.status) ? 'ผ่านการอนุมัติงบประมาณแล้ว' : 'รอการอนุมัติ'}
+                  </div>
                 </div>
               </div>
-              <div className={`timeline-item ${headSignature || activity.status === 'completed' ? 'active' : ''}`}>
-                <div className="timeline-marker"></div>
+
+              {/* 4. ประธานฝ่ายลงนาม */}
+              <div className={`timeline-item ${headSignature ? 'completed' : (activity.status === 'approved' ? 'active' : 'pending')}`}>
+                <div className="timeline-dot">
+                  {headSignature ? <Check size={14} strokeWidth={3} /> : '4'}
+                </div>
                 <div className="timeline-content">
-                  <div className="timeline-title">ประธานฝ่ายลงนาม</div>
-                  <div className="timeline-date">{headSignature ? new Date(headSignature.reviewedAt).toLocaleDateString('th-TH') : (['approved'].includes(activity.status) ? 'รอดำเนินการ' : '-')}</div>
+                  <div className="timeline-title">4. ประธานฝ่ายลงนามรับรอง</div>
+                  <div className="timeline-date">
+                    {headSignature ? `ลงนามแล้ว (${new Date(headSignature.reviewedAt).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' })})` : (activity.status === 'approved' ? 'รอประธานฝ่ายลงนาม' : 'รอดำเนินการ')}
+                  </div>
                 </div>
               </div>
-              <div className={`timeline-item ${presidentSignature || activity.status === 'completed' ? 'active' : ''}`}>
-                <div className="timeline-marker"></div>
+
+              {/* 5. นายกสโมสรลงนาม */}
+              <div className={`timeline-item ${presidentSignature || activity.status === 'completed' ? 'completed' : (activity.status === 'approved' && headSignature ? 'active' : 'pending')}`}>
+                <div className="timeline-dot">
+                  {presidentSignature || activity.status === 'completed' ? <Check size={14} strokeWidth={3} /> : '5'}
+                </div>
                 <div className="timeline-content">
-                  <div className="timeline-title">นายกสโมสรลงนาม</div>
-                  <div className="timeline-date">{presidentSignature ? new Date(presidentSignature.reviewedAt).toLocaleDateString('th-TH') : (headSignature ? 'รอดำเนินการ' : '-')}</div>
+                  <div className="timeline-title">5. นายกสโมสรนิสิตลงนามอนุมัติ (Final)</div>
+                  <div className="timeline-date">
+                    {presidentSignature ? `ลงนามอนุมัติแล้ว (${new Date(presidentSignature.reviewedAt).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' })})` : (headSignature ? 'รอนายกสโมสรลงนาม' : 'รอขั้นตอนก่อนหน้า')}
+                  </div>
                 </div>
               </div>
             </div>

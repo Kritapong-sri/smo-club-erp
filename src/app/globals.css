@@ -3,7 +3,7 @@
    Theme: Light Bright Sky Blue Theme
    ============================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Prompt:wght@300;400;500;600;700&family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap');
 
 /* ── CSS Variables ── */
 :root {
@@ -71,8 +71,8 @@
   --gradient-card: linear-gradient(145deg, #ffffff, #f8fafc);
 
   /* Typography */
-  --font-thai: 'IBM Plex Sans Thai', 'Noto Sans Thai', sans-serif;
-  --font-en: 'Inter', 'IBM Plex Sans Thai', sans-serif;
+  --font-thai: 'Prompt', 'IBM Plex Sans Thai', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-en: 'Plus Jakarta Sans', 'Prompt', 'Inter', sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
 
   /* Spacing */
@@ -161,8 +161,10 @@ h4,
 h5,
 h6 {
   font-family: var(--font-en);
-  line-height: 1.3;
+  line-height: 1.35;
   font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--text-primary);
 }
 
 /* ── Scrollbar ── */
@@ -1801,59 +1803,95 @@ tbody tr:last-child td {
 /* ── Timeline ── */
 .timeline {
   position: relative;
-  padding-left: var(--space-xl);
+  padding-left: 36px;
 }
 
 .timeline::before {
   content: '';
   position: absolute;
-  left: 11px;
-  top: 8px;
-  bottom: 8px;
+  left: 13px;
+  top: 14px;
+  bottom: 20px;
   width: 2px;
   background: var(--border-primary);
+  border-radius: 2px;
 }
 
 .timeline-item {
   position: relative;
-  padding-bottom: var(--space-lg);
+  padding-bottom: 22px;
+}
+
+.timeline-item:last-child {
+  padding-bottom: 4px;
 }
 
 .timeline-dot {
   position: absolute;
-  left: calc(var(--space-xl) * -1 + 4px);
-  top: 4px;
-  width: 16px;
-  height: 16px;
+  left: -36px;
+  top: 1px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
-  border: 3px solid;
-  background: var(--bg-primary);
+  background: #ffffff;
+  border: 2px solid #cbd5e1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  z-index: 2;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.timeline-dot.active {
-  border-color: var(--blue-500);
-  box-shadow: 0 0 8px rgba(59, 130, 246, 0.4);
-}
-
-.timeline-dot.completed {
-  border-color: var(--color-success);
+.timeline-item.completed .timeline-dot {
   background: var(--color-success);
+  border-color: var(--color-success);
+  color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
 }
 
-.timeline-dot.pending {
-  border-color: var(--text-tertiary);
+.timeline-item.active .timeline-dot {
+  background: var(--blue-600);
+  border-color: var(--blue-600);
+  color: #ffffff;
+  box-shadow: 0 0 0 4px rgba(2, 132, 199, 0.25);
+  animation: pulse-ring 2s infinite;
 }
 
-.timeline-content h4 {
-  font-size: 14px;
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgba(2, 132, 199, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(2, 132, 199, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(2, 132, 199, 0);
+  }
+}
+
+.timeline-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.timeline-content h4,
+.timeline-title {
+  font-size: 13.5px;
   font-weight: 600;
   color: var(--text-primary);
+  line-height: 1.4;
 }
 
-.timeline-content p {
+.timeline-content p,
+.timeline-date {
   font-size: 12px;
-  color: var(--text-secondary);
-  margin-top: 2px;
+  color: var(--text-tertiary);
+  line-height: 1.4;
+  margin: 0;
 }
 
 /* ── File item ── */
@@ -1861,20 +1899,23 @@ tbody tr:last-child td {
   display: flex;
   align-items: center;
   gap: var(--space-md);
-  padding: var(--space-md);
+  padding: 12px 16px;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-secondary);
+  background: #ffffff;
   transition: all var(--transition-fast);
+  width: 100%;
 }
 
 .file-item:hover {
-  border-color: var(--border-accent);
-  background: var(--bg-surface-hover);
+  border-color: var(--blue-400);
+  background: var(--blue-50);
+  box-shadow: 0 4px 16px rgba(14, 165, 233, 0.08);
 }
 
 .file-icon {
-  width: 40px;
-  height: 40px;
+  width: 42px;
+  height: 42px;
   border-radius: var(--radius-md);
   display: flex;
   align-items: center;
@@ -1885,14 +1926,17 @@ tbody tr:last-child td {
 
 .file-icon.pdf {
   background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
 }
 
 .file-icon.xlsx {
   background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
 }
 
 .file-icon.image {
   background: rgba(59, 130, 246, 0.12);
+  color: #3b82f6;
 }
 
 .file-info {
@@ -1901,8 +1945,8 @@ tbody tr:last-child td {
 }
 
 .file-name {
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 13.5px;
+  font-weight: 600;
   color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1910,7 +1954,7 @@ tbody tr:last-child td {
 }
 
 .file-meta {
-  font-size: 12px;
+  font-size: 11.5px;
   color: var(--text-tertiary);
   margin-top: 2px;
 }
