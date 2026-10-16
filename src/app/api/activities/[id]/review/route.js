@@ -28,16 +28,18 @@ export async function POST(request, { params }) {
     const currentActivity = await prisma.activity.findUnique({ where: { id } });
     if (!currentActivity) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-    let nextStatus = status; // 'revision' goes straight to 'revision'
+    let nextStatus = status; // 'revision' or 'approved'
     
     if (status === 'approved') {
-      if (currentActivity.status === 'pending_treasurer') {
-        if (!isTreasurerUser) return NextResponse.json({ error: 'Only treasurer can approve this stage' }, { status: 403 });
-        nextStatus = 'pending_executive';
-      } else if (currentActivity.status === 'pending_executive') {
-        if (!isExecutiveUser) return NextResponse.json({ error: 'Only executive can approve this stage' }, { status: 403 });
+      if (isExecutiveUser) {
+        // ฝ่ายบริหาร (นายก/อุปนายก/admin/board) อนุมัติ → อนุมัติเสร็จสมบูรณ์
         nextStatus = 'approved';
+      } else if (isTreasurerUser) {
+        // ถ้าเหรัญญิกอนุมัติ: หากผ่านการตรวจของผู้บริหารแล้วหรือรอผู้บริหารอยู่
+        nextStatus = currentActivity.status === 'pending_executive' ? 'approved' : 'pending_executive';
       }
+    } else if (status === 'revision') {
+      nextStatus = 'revision';
     }
 
     // Use transaction to update Activity and Create Review

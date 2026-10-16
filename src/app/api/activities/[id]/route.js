@@ -7,7 +7,12 @@ export async function PATCH(request, { params }) {
     const session = await getSession();
     if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+    const { id } = await params;
+    const currentActivity = await prisma.activity.findUnique({ where: { id } });
+    if (!currentActivity) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+
     const isAuthorized = ['admin', 'board', 'head'].includes(session.role) || 
+      currentActivity.createdById === session.userId ||
       (session.positionTitle && (
         session.positionTitle.includes('นายก') ||
         session.positionTitle.includes('อุปนายก') ||
@@ -17,8 +22,6 @@ export async function PATCH(request, { params }) {
     if (!isAuthorized) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
-
-    const { id } = await params;
     const { title, description, startDate, endDate, budgetRequested, status } = await request.json();
 
     const updateData = {};

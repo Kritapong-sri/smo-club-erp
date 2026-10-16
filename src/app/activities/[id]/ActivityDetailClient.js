@@ -316,7 +316,7 @@ export default function ActivityDetailClient({ initialActivity, session }) {
   };
 
   const handleSubmitForReview = async () => {
-    if (!confirm('ยืนยันส่งร่างงบประมาณให้เหรัญญิกตรวจสอบใช่หรือไม่?')) return;
+    if (!confirm('ยืนยันส่งร่างโครงการให้เหรัญญิกและฝ่ายบริหารตรวจสอบใช่หรือไม่?')) return;
     setIsSubmitting(true);
     try {
       const res = await fetch(`/api/activities/${activity.id}`, {
@@ -327,8 +327,29 @@ export default function ActivityDetailClient({ initialActivity, session }) {
       if (!res.ok) throw new Error(await res.text());
       const updated = await res.json();
       setActivity(prev => ({ ...prev, status: updated.status }));
+      alert('ส่งโครงการเข้าสู่กระบวนการตรวจสอบเรียบร้อยแล้ว');
     } catch (err) {
       alert('Error submitting for review: ' + err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleMarkRevised = async () => {
+    if (!confirm('ยืนยันว่าได้แก้ไขรายละเอียดหรือเอกสารเรียบร้อย และต้องการส่งตรวจรอบใหม่ใช่หรือไม่?')) return;
+    setIsSubmitting(true);
+    try {
+      const res = await fetch(`/api/activities/${activity.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'pending_treasurer' }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const updated = await res.json();
+      setActivity(prev => ({ ...prev, status: updated.status }));
+      alert('บันทึกสถานะว่าแก้ไขแล้ว และส่งตรวจรอบใหม่เรียบร้อย!');
+    } catch (err) {
+      alert('เกิดข้อผิดพลาด: ' + err.message);
     } finally {
       setIsSubmitting(false);
     }
@@ -387,27 +408,46 @@ export default function ActivityDetailClient({ initialActivity, session }) {
           </div>
           <p>{activity.description}</p>
         </div>
-        <div className="flex gap-sm">
+        <div className="flex gap-sm items-center flex-wrap">
           {canEdit && (
             <button className="btn btn-secondary flex items-center gap-xs" onClick={() => setShowEditModal(true)}>
               <Pencil size={15} /> แก้ไขข้อมูล
             </button>
           )}
+
+          {/* 1. ส่งตรวจครั้งแรก */}
           {canEdit && activity.status === 'draft' && (
             <button className="btn btn-primary flex items-center gap-xs" onClick={handleSubmitForReview} disabled={isSubmitting}>
-              <Send size={15} /> ส่งตรวจงบ (เหรัญญิก)
+              <Send size={15} /> ส่งตรวจโครงการ
             </button>
           )}
-          {isTreasurerUser && activity.status === 'pending_treasurer' && (
-            <button className="btn btn-primary flex items-center gap-xs" onClick={() => setShowReviewModal(true)}>
-              <ClipboardCheck size={15} /> ตรวจงบประมาณ
+
+          {/* 2. ปุ่มแก้ไขแล้ว (ส่งตรวจใหม่) เมื่อสถานะเป็น revision */}
+          {canEdit && activity.status === 'revision' && (
+            <button 
+              className="btn flex items-center gap-xs hover-scale" 
+              onClick={handleMarkRevised} 
+              disabled={isSubmitting}
+              style={{ background: 'var(--color-success)', color: 'white', border: 'none', fontWeight: '600' }}
+            >
+              <CheckCircle2 size={16} /> แก้ไขเรียบร้อยแล้ว (ส่งตรวจใหม่)
             </button>
           )}
-          {isExecutiveUser && activity.status === 'pending_executive' && (
-            <button className="btn btn-primary flex items-center gap-xs" onClick={() => setShowReviewModal(true)}>
-              <CheckSquare size={15} /> พิจารณาอนุมัติ
+
+          {/* 3. เหรัญญิกตรวจ: ตรวจได้ตอนรอตรวจ หรือตอนอยู่ในสถานะแก้ไข */}
+          {isTreasurerUser && ['pending_treasurer', 'pending_executive', 'revision'].includes(activity.status) && (
+            <button className="btn btn-primary flex items-center gap-xs" onClick={() => { setReviewData({ status: 'approved', feedback: '', fileUrl: '' }); setShowReviewModal(true); }}>
+              <ClipboardCheck size={15} /> ตรวจงบประมาณ (เหรัญญิก)
             </button>
           )}
+
+          {/* 4. ฝ่ายบริหาร/สามเหลี่ยมตรวจ: ตรวจได้พร้อมกัน */}
+          {isExecutiveUser && ['pending_treasurer', 'pending_executive', 'revision'].includes(activity.status) && (
+            <button className="btn btn-secondary flex items-center gap-xs hover-scale" onClick={() => { setReviewData({ status: 'approved', feedback: '', fileUrl: '' }); setShowReviewModal(true); }} style={{ borderColor: 'var(--blue-600)', color: 'var(--blue-600)', fontWeight: '600' }}>
+              <CheckSquare size={15} /> พิจารณาอนุมัติ (สามเหลี่ยม)
+            </button>
+          )}
+
           {isAdmin && (
             <button className="btn btn-danger flex items-center gap-xs" onClick={handleDeleteActivity} disabled={isSubmitting}>
               <Trash2 size={15} /> ลบโครงการ
@@ -565,15 +605,35 @@ export default function ActivityDetailClient({ initialActivity, session }) {
             <div className="card hover-glow">
               <h3 className="mb-md">ประวัติการตรวจเอกสาร / คำแนะนำ</h3>
               <div className="flex-col gap-md">
-                {reviews.map(rev => (
-                  <div key={rev.id} style={{ padding: '12px', background: 'var(--bg-surface-hover)', borderRadius: 'var(--radius-md)', borderLeft: `3px solid ${rev.status === 'approved' ? 'var(--color-success)' : 'var(--color-warning)'}` }}>
-                    <div className="flex justify-between items-center mb-xs">
-                      <span className="font-semibold text-sm">{rev.reviewer?.positionTitle || rev.reviewer?.firstNameTh || 'ผู้ตรวจ'}</span>
-                      <span className="text-xs text-tertiary">{new Date(rev.reviewedAt).toLocaleDateString('th-TH')}</span>
+                {reviews.map(rev => {
+                  const urlRegex = /(https?:\/\/[^\s]+)/g;
+                  const parts = rev.feedback ? rev.feedback.split(urlRegex) : [];
+
+                  return (
+                    <div key={rev.id} style={{ padding: '12px', background: 'var(--bg-surface-hover)', borderRadius: 'var(--radius-md)', borderLeft: `3px solid ${rev.status === 'approved' ? 'var(--color-success)' : 'var(--color-warning)'}` }}>
+                      <div className="flex justify-between items-center mb-xs">
+                        <span className="font-semibold text-sm">{rev.reviewer?.positionTitle || rev.reviewer?.firstNameTh || 'ผู้ตรวจ'}</span>
+                        <div className="flex items-center gap-xs">
+                          <span className={`status-badge ${rev.status === 'approved' ? 'approved' : 'revision'}`} style={{ fontSize: '11px', padding: '2px 8px' }}>
+                            {rev.status === 'approved' ? 'อนุมัติ' : 'ขอให้แก้ไข'}
+                          </span>
+                          <span className="text-xs text-tertiary">{new Date(rev.reviewedAt).toLocaleDateString('th-TH')}</span>
+                        </div>
+                      </div>
+                      <div className="text-sm" style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                        {parts.map((part, idx) =>
+                          urlRegex.test(part) ? (
+                            <a key={idx} href={part} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--blue-600)', textDecoration: 'underline', fontWeight: '500' }}>
+                              {part}
+                            </a>
+                          ) : (
+                            part
+                          )
+                        )}
+                      </div>
                     </div>
-                    <div className="text-sm" style={{ whiteSpace: 'pre-wrap' }}>{rev.feedback}</div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
@@ -880,12 +940,25 @@ export default function ActivityDetailClient({ initialActivity, session }) {
                 </select>
               </div>
               <div className="input-group mb-sm">
-                <label className="input-label">คำแนะนำ / ความคิดเห็นเพิ่มเติม</label>
-                <textarea className="input" rows="3" placeholder="ระบุเหตุผลหรือคำแนะนำ..." value={reviewData.feedback} onChange={e => setReviewData({ ...reviewData, feedback: e.target.value })} required />
+                <label className="input-label">คำแนะนำ / ความคิดเห็นเพิ่มเติม <span style={{ color: 'var(--color-danger)' }}>*</span></label>
+                <textarea className="input" rows="3" placeholder="ระบุเหตุผล ข้อเสนอแนะ หรือจุดที่ต้องการให้แก้ไข..." value={reviewData.feedback} onChange={e => setReviewData({ ...reviewData, feedback: e.target.value })} required />
+              </div>
+              <div className="input-group mb-md">
+                <label className="input-label">แนบลิงก์เอกสาร / Google Drive ประกอบการตรวจ (ตัวเลือก)</label>
+                <input
+                  type="url"
+                  className="input font-en"
+                  placeholder="https://drive.google.com/..."
+                  value={reviewData.fileUrl || ''}
+                  onChange={e => setReviewData({ ...reviewData, fileUrl: e.target.value })}
+                />
+                <span className="text-xs text-tertiary mt-xs">หากมีไฟล์ร่างที่คอมเมนต์หรือตัวอย่าง สามารถวางลิงก์ให้ผู้จัดเปิดดูได้ทันที</span>
               </div>
               <div className="flex justify-end gap-sm">
                 <button type="button" className="btn btn-secondary" onClick={() => setShowReviewModal(false)}>ยกเลิก</button>
-                <button type="submit" className="btn btn-primary" disabled={isSubmitting}>บันทึกผลการตรวจ</button>
+                <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
+                  {reviewData.status === 'approved' ? 'อนุมัติโครงการ' : 'ส่งกลับให้แก้ไข'}
+                </button>
               </div>
             </form>
           </div>

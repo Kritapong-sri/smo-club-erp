@@ -57,7 +57,7 @@ export default function TreasurerClient({ initialActivities, departments }) {
 
   const fmt = (val) => `฿${Math.round(val).toLocaleString()}`;
 
-  const pendingActivities = initialActivities.filter(a => a.status === 'pending_treasurer');
+  const pendingActivities = initialActivities.filter(a => ['pending_treasurer', 'pending_executive', 'revision'].includes(a.status));
 
   return (
     <div className="page-container animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>

@@ -31,7 +31,7 @@ export default async function ExecutivePage() {
     orderBy: { createdAt: 'desc' }
   });
 
-  const pendingActivities = activities.filter(a => a.status === 'pending_executive');
+  const pendingActivities = activities.filter(a => ['pending_executive', 'pending_treasurer', 'revision'].includes(a.status));
   const approvedActivities = activities.filter(a => a.status === 'approved' || a.status === 'completed');
 
   return (
