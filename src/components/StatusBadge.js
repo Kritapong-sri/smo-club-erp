@@ -3,8 +3,8 @@ const statusLabels = {
   pending_treasurer: 'รอตรวจงบ',
   pending_executive: 'รออนุมัติ',
   revision: 'แก้ไข',
-  approved: 'อนุมัติแล้ว',
-  completed: 'เสร็จสิ้น',
+  approved: 'อนุมัติแล้ว (รอลงนาม)',
+  completed: 'ลงนามสมบูรณ์',
   pending: 'รออนุมัติ',
   confirmed: 'ยืนยันแล้ว'
 };

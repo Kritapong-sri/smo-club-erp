@@ -24,7 +24,10 @@ import {
   HardDrive,
   CheckCircle2,
   AlertCircle,
-  Trash2
+  Trash2,
+  PenTool,
+  ShieldCheck,
+  Award
 } from 'lucide-react';
 
 export default function ActivityDetailClient({ initialActivity, session }) {
@@ -92,6 +95,23 @@ export default function ActivityDetailClient({ initialActivity, session }) {
       session.positionTitle.includes('นายก') ||
       session.positionTitle.includes('อุปนายก')
     ))
+  );
+
+  const headSignature = (activity.budgetReviews || []).find(r => r.status === 'head_signed');
+  const presidentSignature = (activity.budgetReviews || []).find(r => r.status === 'president_signed');
+
+  const isDeptHeadUser = session && (
+    session.role === 'admin' ||
+    session.role === 'board' ||
+    (session.departmentId && session.departmentId === activity.departmentId && (session.role === 'head' || session.positionTitle?.includes('ประธาน') || session.positionTitle?.includes('หัวหน้า'))) ||
+    (activity.department?.headId && session.userId === activity.department.headId) ||
+    (session.positionTitle && session.positionTitle.includes('ประธานฝ่าย'))
+  );
+
+  const isPresidentUser = session && (
+    session.role === 'admin' ||
+    (session.positionTitle && (session.positionTitle.includes('นายกสโมสรนิสิต') || session.positionTitle.includes('นายกสโมสร') || session.positionTitle.includes('นายก'))) ||
+    (session.role === 'board' && session.positionTitle?.includes('นายก'))
   );
 
   const fetchBudget = async () => {
@@ -401,7 +421,7 @@ export default function ActivityDetailClient({ initialActivity, session }) {
     setIsSubmitting(true);
     try {
       const fileLabel = reviewData.fileName ? `ไฟล์แนบ (${reviewData.fileName})` : 'ไฟล์แนบ';
-      const finalFeedback = reviewData.fileUrl 
+      const finalFeedback = (reviewData.status === 'revision' && reviewData.fileUrl)
         ? `${reviewData.feedback}\n\n📎 ${fileLabel}: ${reviewData.fileUrl}`
         : reviewData.feedback;
 
@@ -425,6 +445,35 @@ export default function ActivityDetailClient({ initialActivity, session }) {
       setReviewUploadMessage(null);
     } catch (err) {
       alert('Error submitting review: ' + err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleSign = async (signType) => {
+    const roleTitle = signType === 'head' ? 'ประธานฝ่าย' : 'นายกสโมสรนิสิต';
+    if (!confirm(`ยืนยันการลงนามในฐานะ "${roleTitle}" สำหรับโครงการ "${activity.title}" ใช่หรือไม่?`)) return;
+
+    setIsSubmitting(true);
+    try {
+      const res = await fetch(`/api/activities/${activity.id}/sign`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ signType })
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'เกิดข้อผิดพลาดในการลงนาม');
+
+      setActivity(prev => ({
+        ...prev,
+        ...data.updatedActivity,
+        budgetReviews: [data.review, ...(prev.budgetReviews?.filter(r => r.id !== data.review.id) || [])]
+      }));
+
+      alert(`ลงนามในฐานะ "${roleTitle}" เรียบร้อยแล้ว!`);
+    } catch (err) {
+      alert(err.message);
     } finally {
       setIsSubmitting(false);
     }
@@ -489,6 +538,41 @@ export default function ActivityDetailClient({ initialActivity, session }) {
             <button className="btn btn-secondary flex items-center gap-xs hover-scale" onClick={() => { setReviewData({ status: 'approved', feedback: '', fileUrl: '', fileName: '' }); setReviewUploadMessage(null); setShowReviewModal(true); }} style={{ borderColor: 'var(--blue-600)', color: 'var(--blue-600)', fontWeight: '600' }}>
               <CheckSquare size={15} /> พิจารณาอนุมัติ (สามเหลี่ยม)
             </button>
+          )}
+
+          {/* 5. กระบวนการลงนามรับรองโครงการ (เมื่ออนุมัติงบแล้ว: ประธานฝ่ายเซ็น แล้ว นายกสโมสรเซ็น) */}
+          {['approved', 'completed'].includes(activity.status) && (
+            <>
+              {/* ขั้นตอนที่ 1: ประธานฝ่ายลงนาม */}
+              {!headSignature && isDeptHeadUser && (
+                <button 
+                  className="btn flex items-center gap-xs hover-scale" 
+                  onClick={() => handleSign('head')} 
+                  disabled={isSubmitting}
+                  style={{ background: 'linear-gradient(135deg, #4f46e5 0%, #2563eb 100%)', color: 'white', border: 'none', fontWeight: '600' }}
+                >
+                  <PenTool size={16} /> ประธานฝ่ายลงนามรับรอง
+                </button>
+              )}
+
+              {/* ขั้นตอนที่ 2: นายกสโมสรลงนาม (เมื่อประธานฝ่ายเซ็นแล้ว หรือเป็น admin) */}
+              {!presidentSignature && (headSignature || isAdmin) && isPresidentUser && (
+                <button 
+                  className="btn flex items-center gap-xs hover-scale" 
+                  onClick={() => handleSign('president')} 
+                  disabled={isSubmitting}
+                  style={{ background: 'linear-gradient(135deg, #e11d48 0%, #be123c 100%)', color: 'white', border: 'none', fontWeight: '600', boxShadow: '0 4px 12px rgba(225, 29, 72, 0.3)' }}
+                >
+                  <PenTool size={16} /> นายกสโมสรลงนามอนุมัติ (Final)
+                </button>
+              )}
+
+              {headSignature && presidentSignature && (
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 14px', background: 'rgba(16, 185, 129, 0.12)', border: '1px solid var(--color-success)', borderRadius: 'var(--radius-sm)', color: 'var(--color-success)', fontWeight: '600', fontSize: '13px' }}>
+                  <ShieldCheck size={16} /> ลงนามสมบูรณ์ครบถ้วน
+                </div>
+              )}
+            </>
           )}
 
           {isAdmin && (
@@ -644,6 +728,138 @@ export default function ActivityDetailClient({ initialActivity, session }) {
             )}
           </div>
 
+          {/* ขั้นตอนการลงนามเอกสาร (Official Signatures) */}
+          {['approved', 'completed'].includes(activity.status) && (
+            <div className="card hover-glow" style={{ borderLeft: '4px solid var(--blue-600)' }}>
+              <div className="flex items-center justify-between mb-md">
+                <div className="flex items-center gap-sm">
+                  <PenTool size={18} style={{ color: 'var(--blue-600)' }} />
+                  <h3 style={{ margin: 0 }}>ขั้นตอนการลงนามเอกสาร (Official Signatures)</h3>
+                </div>
+                {headSignature && presidentSignature ? (
+                  <span className="status-badge completed" style={{ fontSize: '11px', padding: '2px 8px' }}>
+                    ลงนามครบทุกขั้นตอน
+                  </span>
+                ) : (
+                  <span className="status-badge pending" style={{ fontSize: '11px', padding: '2px 8px' }}>
+                    กำลังอยู่ในขั้นตอนลงนาม
+                  </span>
+                )}
+              </div>
+
+              <div className="grid-2 gap-md">
+                {/* 1. ประธานฝ่าย */}
+                <div style={{
+                  padding: '16px',
+                  borderRadius: 'var(--radius-md)',
+                  background: headSignature ? 'rgba(16, 185, 129, 0.05)' : 'var(--bg-surface-hover)',
+                  border: `1px solid ${headSignature ? 'var(--color-success)' : 'var(--border-primary)'}`,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '10px'
+                }}>
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-sm flex items-center gap-xs">
+                      1. ประธานฝ่าย{activity.department?.name ? ` (${activity.department.name})` : ''}
+                    </span>
+                    {headSignature ? (
+                      <span style={{ fontSize: '11px', background: 'rgba(16, 185, 129, 0.15)', color: 'var(--color-success)', padding: '2px 8px', borderRadius: '4px', fontWeight: '700' }}>
+                        ✓ ลงนามแล้ว
+                      </span>
+                    ) : (
+                      <span style={{ fontSize: '11px', background: 'rgba(245, 158, 11, 0.15)', color: '#d97706', padding: '2px 8px', borderRadius: '4px', fontWeight: '700' }}>
+                        ⏳ รอประธานฝ่ายเซ็น
+                      </span>
+                    )}
+                  </div>
+
+                  {headSignature ? (
+                    <div style={{ fontSize: '13px' }}>
+                      <div className="text-secondary mb-xs">
+                        <strong>ผู้ลงนาม:</strong> {headSignature.reviewer?.firstNameTh} {headSignature.reviewer?.lastNameTh} ({headSignature.reviewer?.positionTitle || 'ประธานฝ่าย'})
+                      </div>
+                      <div className="text-tertiary text-xs">
+                        ลงนามเมื่อ: {new Date(headSignature.reviewedAt).toLocaleString('th-TH')}
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <p className="text-tertiary text-xs mb-sm">
+                        รอประธานฝ่าย{activity.department?.name || ''} ตรวจรับรองโครงการก่อนส่งให้นายกสโมสร
+                      </p>
+                      {isDeptHeadUser && (
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-primary w-full flex items-center justify-center gap-xs"
+                          onClick={() => handleSign('head')}
+                          disabled={isSubmitting}
+                        >
+                          <PenTool size={14} /> ลงนามรับรอง (ประธานฝ่าย)
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* 2. นายกสโมสรนิสิต */}
+                <div style={{
+                  padding: '16px',
+                  borderRadius: 'var(--radius-md)',
+                  background: presidentSignature ? 'rgba(16, 185, 129, 0.05)' : 'var(--bg-surface-hover)',
+                  border: `1px solid ${presidentSignature ? 'var(--color-success)' : 'var(--border-primary)'}`,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '10px'
+                }}>
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold text-sm flex items-center gap-xs">
+                      2. นายกสโมสรนิสิต (Final)
+                    </span>
+                    {presidentSignature ? (
+                      <span style={{ fontSize: '11px', background: 'rgba(16, 185, 129, 0.15)', color: 'var(--color-success)', padding: '2px 8px', borderRadius: '4px', fontWeight: '700' }}>
+                        ✓ ลงนามอนุมัติสมบูรณ์
+                      </span>
+                    ) : (
+                      <span style={{ fontSize: '11px', background: headSignature ? 'rgba(225, 29, 72, 0.15)' : 'var(--bg-surface)', color: headSignature ? '#e11d48' : 'var(--text-tertiary)', padding: '2px 8px', borderRadius: '4px', fontWeight: '700' }}>
+                        {headSignature ? '✍️ รอนายกสโมสรเซ็น' : '🔒 รอขั้นตอนที่ 1'}
+                      </span>
+                    )}
+                  </div>
+
+                  {presidentSignature ? (
+                    <div style={{ fontSize: '13px' }}>
+                      <div className="text-secondary mb-xs">
+                        <strong>ผู้ลงนาม:</strong> {presidentSignature.reviewer?.firstNameTh} {presidentSignature.reviewer?.lastNameTh} ({presidentSignature.reviewer?.positionTitle || 'นายกสโมสรนิสิต'})
+                      </div>
+                      <div className="text-tertiary text-xs">
+                        ลงนามเมื่อ: {new Date(presidentSignature.reviewedAt).toLocaleString('th-TH')}
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <p className="text-tertiary text-xs mb-sm">
+                        {headSignature
+                          ? 'ประธานฝ่ายลงนามแล้ว รอให้นายกสโมสรนิสิตลงนามอนุมัติขั้นสุดท้าย'
+                          : 'ต้องให้ประธานฝ่ายลงนามรับรองให้เรียบร้อยก่อน จึงจะสามารถลงนามอนุมัติได้'}
+                      </p>
+                      {isPresidentUser && (headSignature || isAdmin) && (
+                        <button
+                          type="button"
+                          className="btn btn-sm w-full flex items-center justify-center gap-xs hover-scale"
+                          onClick={() => handleSign('president')}
+                          disabled={isSubmitting}
+                          style={{ background: 'linear-gradient(135deg, #e11d48 0%, #be123c 100%)', color: 'white', border: 'none' }}
+                        >
+                          <PenTool size={14} /> ลงนามอนุมัติ (นายกสโมสรนิสิต)
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
           {reviews.length > 0 && (
             <div className="card hover-glow">
               <h3 className="mb-md">ประวัติการตรวจเอกสาร / คำแนะนำ</h3>
@@ -652,13 +868,32 @@ export default function ActivityDetailClient({ initialActivity, session }) {
                   const urlRegex = /(https?:\/\/[^\s]+)/g;
                   const parts = rev.feedback ? rev.feedback.split(urlRegex) : [];
 
+                  const revBadgeLabel = {
+                    approved: 'อนุมัติงบ',
+                    revision: 'ขอให้แก้ไข',
+                    head_signed: 'ประธานฝ่ายลงนาม',
+                    president_signed: 'นายกสโมสรลงนาม'
+                  }[rev.status] || rev.status;
+
+                  const revBadgeClass = {
+                    approved: 'approved',
+                    revision: 'revision',
+                    head_signed: 'approved',
+                    president_signed: 'completed'
+                  }[rev.status] || 'pending';
+
+                  const borderLeftColor =
+                    rev.status === 'president_signed' ? 'var(--color-success)' :
+                    rev.status === 'head_signed' ? '#4f46e5' :
+                    rev.status === 'approved' ? 'var(--color-success)' : 'var(--color-warning)';
+
                   return (
-                    <div key={rev.id} style={{ padding: '12px', background: 'var(--bg-surface-hover)', borderRadius: 'var(--radius-md)', borderLeft: `3px solid ${rev.status === 'approved' ? 'var(--color-success)' : 'var(--color-warning)'}` }}>
+                    <div key={rev.id} style={{ padding: '12px', background: 'var(--bg-surface-hover)', borderRadius: 'var(--radius-md)', borderLeft: `3px solid ${borderLeftColor}` }}>
                       <div className="flex justify-between items-center mb-xs">
                         <span className="font-semibold text-sm">{rev.reviewer?.positionTitle || rev.reviewer?.firstNameTh || 'ผู้ตรวจ'}</span>
                         <div className="flex items-center gap-xs">
-                          <span className={`status-badge ${rev.status === 'approved' ? 'approved' : 'revision'}`} style={{ fontSize: '11px', padding: '2px 8px' }}>
-                            {rev.status === 'approved' ? 'อนุมัติ' : 'ขอให้แก้ไข'}
+                          <span className={`status-badge ${revBadgeClass}`} style={{ fontSize: '11px', padding: '2px 8px' }}>
+                            {revBadgeLabel}
                           </span>
                           <span className="text-xs text-tertiary">{new Date(rev.reviewedAt).toLocaleDateString('th-TH')}</span>
                         </div>
@@ -714,21 +949,28 @@ export default function ActivityDetailClient({ initialActivity, session }) {
                 <div className="timeline-marker"></div>
                 <div className="timeline-content">
                   <div className="timeline-title">รอตรวจเอกสาร/งบ</div>
-                  <div className="timeline-date">-</div>
+                  <div className="timeline-date">{['approved', 'completed'].includes(activity.status) ? 'ผ่านการตรวจแล้ว' : (['pending_treasurer', 'pending_executive'].includes(activity.status) ? 'กำลังตรวจ' : '-')}</div>
                 </div>
               </div>
               <div className={`timeline-item ${['approved', 'completed'].includes(activity.status) ? 'active' : ''}`}>
                 <div className="timeline-marker"></div>
                 <div className="timeline-content">
                   <div className="timeline-title">อนุมัติงบประมาณ</div>
-                  <div className="timeline-date">-</div>
+                  <div className="timeline-date">{['approved', 'completed'].includes(activity.status) ? 'อนุมัติแล้ว' : '-'}</div>
                 </div>
               </div>
-              <div className={`timeline-item ${activity.status === 'completed' ? 'active' : ''}`}>
+              <div className={`timeline-item ${headSignature || activity.status === 'completed' ? 'active' : ''}`}>
                 <div className="timeline-marker"></div>
                 <div className="timeline-content">
-                  <div className="timeline-title">เสร็จสิ้นกิจกรรม</div>
-                  <div className="timeline-date">-</div>
+                  <div className="timeline-title">ประธานฝ่ายลงนาม</div>
+                  <div className="timeline-date">{headSignature ? new Date(headSignature.reviewedAt).toLocaleDateString('th-TH') : (['approved'].includes(activity.status) ? 'รอดำเนินการ' : '-')}</div>
+                </div>
+              </div>
+              <div className={`timeline-item ${presidentSignature || activity.status === 'completed' ? 'active' : ''}`}>
+                <div className="timeline-marker"></div>
+                <div className="timeline-content">
+                  <div className="timeline-title">นายกสโมสรลงนาม</div>
+                  <div className="timeline-date">{presidentSignature ? new Date(presidentSignature.reviewedAt).toLocaleDateString('th-TH') : (headSignature ? 'รอดำเนินการ' : '-')}</div>
                 </div>
               </div>
             </div>
@@ -977,103 +1219,127 @@ export default function ActivityDetailClient({ initialActivity, session }) {
             <form onSubmit={handleReviewSubmit}>
               <div className="input-group mb-sm">
                 <label className="input-label">ผลการพิจารณา</label>
-                <select className="select" value={reviewData.status} onChange={e => setReviewData({ ...reviewData, status: e.target.value })}>
+                <select 
+                  className="select" 
+                  value={reviewData.status} 
+                  onChange={e => {
+                    const newStatus = e.target.value;
+                    setReviewData(prev => ({
+                      ...prev,
+                      status: newStatus,
+                      fileUrl: newStatus === 'approved' ? '' : prev.fileUrl,
+                      fileName: newStatus === 'approved' ? '' : prev.fileName
+                    }));
+                    if (newStatus === 'approved') {
+                      setReviewUploadMessage(null);
+                    }
+                  }}
+                >
                   <option value="approved">อนุมัติ (Approved)</option>
                   <option value="revision">ขอให้แก้ไขเพิ่มเติม (Revision Required)</option>
                 </select>
               </div>
               <div className="input-group mb-sm">
                 <label className="input-label">คำแนะนำ / ความคิดเห็นเพิ่มเติม <span style={{ color: 'var(--color-danger)' }}>*</span></label>
-                <textarea className="input" rows="3" placeholder="ระบุเหตุผล ข้อเสนอแนะ หรือจุดที่ต้องการให้แก้ไข..." value={reviewData.feedback} onChange={e => setReviewData({ ...reviewData, feedback: e.target.value })} required />
+                <textarea 
+                  className="input" 
+                  rows="3" 
+                  placeholder={reviewData.status === 'approved' ? "ระบุหมายเหตุการอนุมัติ (เช่น ตรวจสอบงบประมาณถูกต้องแล้ว)..." : "ระบุเหตุผล ข้อเสนอแนะ หรือจุดที่ต้องการให้แก้ไข..."} 
+                  value={reviewData.feedback} 
+                  onChange={e => setReviewData({ ...reviewData, feedback: e.target.value })} 
+                  required 
+                />
               </div>
 
-              {/* แนบไฟล์/เอกสารประกอบการตรวจแบบ Dropzone + Link */}
-              <div className="input-group mb-md">
-                <div className="flex justify-between items-center mb-xs">
-                  <label className="input-label mb-0">แนบเอกสาร / ไฟล์ประกอบการตรวจ (ตัวเลือก)</label>
-                  <div style={{ display: 'flex', gap: '4px' }}>
-                    <button
-                      type="button"
-                      className={`btn btn-xs ${reviewUploadMode === 'file' ? 'btn-primary' : 'btn-outline'}`}
-                      onClick={() => setReviewUploadMode('file')}
-                      style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '4px' }}
-                    >
-                      <Folder size={12} /> อัปโหลดไฟล์
-                    </button>
-                    <button
-                      type="button"
-                      className={`btn btn-xs ${reviewUploadMode === 'link' ? 'btn-primary' : 'btn-outline'}`}
-                      onClick={() => setReviewUploadMode('link')}
-                      style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '4px' }}
-                    >
-                      <LinkIcon size={12} /> แปะลิงก์
-                    </button>
-                  </div>
-                </div>
-
-                {reviewUploadMode === 'file' ? (
-                  <div>
-                    <div style={{
-                      border: '2px dashed var(--blue-300)',
-                      borderRadius: 'var(--radius-md)',
-                      padding: '16px 12px',
-                      textAlign: 'center',
-                      cursor: 'pointer',
-                      background: 'var(--blue-50)',
-                      position: 'relative'
-                    }}>
-                      <input
-                        type="file"
-                        accept=".pdf,.xlsx,.csv,.doc,.docx,.png,.jpg,.jpeg"
-                        onChange={handleReviewFileSelectAndUploadGDrive}
-                        disabled={isUploadingReviewGDrive}
-                        style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer' }}
-                      />
-                      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '6px' }}>
-                        {isUploadingReviewGDrive ? (
-                          <Loader2 size={26} className="animate-spin" style={{ color: 'var(--blue-600)' }} />
-                        ) : (
-                          <UploadCloud size={26} style={{ color: 'var(--blue-600)' }} />
-                        )}
-                      </div>
-                      <p style={{ fontWeight: '600', fontSize: '13px', marginBottom: '2px', color: 'var(--blue-700)' }}>
-                        {isUploadingReviewGDrive ? 'กำลังอัปโหลดไฟล์ขึ้น Google Drive...' : (reviewData.fileName ? `ไฟล์ที่เลือก: ${reviewData.fileName}` : 'คลิกหรือลากไฟล์เอกสารมาวางที่นี่')}
-                      </p>
-                      <p style={{ fontSize: '11px', color: 'var(--text-tertiary)', margin: 0 }}>
-                        {reviewData.fileUrl ? '✅ บันทึกขึ้น Google Drive เรียบร้อยแล้ว' : 'ระบบจะอัปโหลดเข้า Google Drive สโมสรให้อัตโนมัติ'}
-                      </p>
+              {/* แนบไฟล์/เอกสารประกอบ: แสดงเฉพาะเมื่อต้องการให้แก้ไข (Revision) เท่านั้น */}
+              {reviewData.status === 'revision' && (
+                <div className="input-group mb-md">
+                  <div className="flex justify-between items-center mb-xs">
+                    <label className="input-label mb-0">แนบเอกสาร / ไฟล์ที่ต้องการให้แก้ไข (ตัวเลือก)</label>
+                    <div style={{ display: 'flex', gap: '4px' }}>
+                      <button
+                        type="button"
+                        className={`btn btn-xs ${reviewUploadMode === 'file' ? 'btn-primary' : 'btn-outline'}`}
+                        onClick={() => setReviewUploadMode('file')}
+                        style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '4px' }}
+                      >
+                        <Folder size={12} /> อัปโหลดไฟล์
+                      </button>
+                      <button
+                        type="button"
+                        className={`btn btn-xs ${reviewUploadMode === 'link' ? 'btn-primary' : 'btn-outline'}`}
+                        onClick={() => setReviewUploadMode('link')}
+                        style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '4px' }}
+                      >
+                        <LinkIcon size={12} /> แปะลิงก์
+                      </button>
                     </div>
+                  </div>
 
-                    {reviewUploadMessage && (
+                  {reviewUploadMode === 'file' ? (
+                    <div>
                       <div style={{
-                        marginTop: '8px',
-                        padding: '6px 10px',
-                        borderRadius: '6px',
-                        fontSize: '12px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        background: reviewUploadMessage.type === 'error' ? '#fee2e2' : '#ecfdf5',
-                        color: reviewUploadMessage.type === 'error' ? '#b91c1c' : '#047857'
+                        border: '2px dashed var(--blue-300)',
+                        borderRadius: 'var(--radius-md)',
+                        padding: '16px 12px',
+                        textAlign: 'center',
+                        cursor: 'pointer',
+                        background: 'var(--blue-50)',
+                        position: 'relative'
                       }}>
-                        {reviewUploadMessage.type === 'error' ? <AlertCircle size={14} /> : <CheckCircle2 size={14} />}
-                        <span>{reviewUploadMessage.text}</span>
+                        <input
+                          type="file"
+                          accept=".pdf,.xlsx,.csv,.doc,.docx,.png,.jpg,.jpeg"
+                          onChange={handleReviewFileSelectAndUploadGDrive}
+                          disabled={isUploadingReviewGDrive}
+                          style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer' }}
+                        />
+                        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '6px' }}>
+                          {isUploadingReviewGDrive ? (
+                            <Loader2 size={26} className="animate-spin" style={{ color: 'var(--blue-600)' }} />
+                          ) : (
+                            <UploadCloud size={26} style={{ color: 'var(--blue-600)' }} />
+                          )}
+                        </div>
+                        <p style={{ fontWeight: '600', fontSize: '13px', marginBottom: '2px', color: 'var(--blue-700)' }}>
+                          {isUploadingReviewGDrive ? 'กำลังอัปโหลดไฟล์ขึ้น Google Drive...' : (reviewData.fileName ? `ไฟล์ที่เลือก: ${reviewData.fileName}` : 'คลิกหรือลากไฟล์ข้อเสนอแนะมาวางที่นี่')}
+                        </p>
+                        <p style={{ fontSize: '11px', color: 'var(--text-tertiary)', margin: 0 }}>
+                          {reviewData.fileUrl ? '✅ บันทึกขึ้น Google Drive เรียบร้อยแล้ว' : 'ระบบจะอัปโหลดเข้า Google Drive สโมสรให้อัตโนมัติ'}
+                        </p>
                       </div>
-                    )}
-                  </div>
-                ) : (
-                  <div>
-                    <input
-                      type="url"
-                      className="input font-en"
-                      placeholder="https://drive.google.com/..."
-                      value={reviewData.fileUrl || ''}
-                      onChange={e => setReviewData({ ...reviewData, fileUrl: e.target.value })}
-                    />
-                    <span className="text-xs text-tertiary mt-xs">หากมีลิงก์ Google Drive หรือเอกสาร สามารถวางที่นี่ได้ทันที</span>
-                  </div>
-                )}
-              </div>
+
+                      {reviewUploadMessage && (
+                        <div style={{
+                          marginTop: '8px',
+                          padding: '6px 10px',
+                          borderRadius: '6px',
+                          fontSize: '12px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          background: reviewUploadMessage.type === 'error' ? '#fee2e2' : '#ecfdf5',
+                          color: reviewUploadMessage.type === 'error' ? '#b91c1c' : '#047857'
+                        }}>
+                          {reviewUploadMessage.type === 'error' ? <AlertCircle size={14} /> : <CheckCircle2 size={14} />}
+                          <span>{reviewUploadMessage.text}</span>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div>
+                      <input
+                        type="url"
+                        className="input font-en"
+                        placeholder="https://drive.google.com/..."
+                        value={reviewData.fileUrl || ''}
+                        onChange={e => setReviewData({ ...reviewData, fileUrl: e.target.value })}
+                      />
+                      <span className="text-xs text-tertiary mt-xs">หากมีลิงก์ Google Drive หรือเอกสาร สามารถวางที่นี่ได้ทันที</span>
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="flex justify-end gap-sm">
                 <button type="button" className="btn btn-secondary" onClick={() => setShowReviewModal(false)}>ยกเลิก</button>
